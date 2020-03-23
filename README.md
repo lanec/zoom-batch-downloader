@@ -14,3 +14,5 @@ Exact command is "pip install -r requirements.txt"
 Then run "python cloudlink.py"
 
 That will download all the recordings wherever you specify. 
+
+Code written by Georg Kasmin and Lane Campbell
