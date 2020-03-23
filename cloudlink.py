@@ -15,6 +15,7 @@ headers = {
 		'application/json',
 	}
 
+# Put your own download path here, I used an external hard drive so mine will differ from yours
 PATH = '/Volumes/Ext3/Zoom/'
 
 
