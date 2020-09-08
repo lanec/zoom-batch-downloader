@@ -3,7 +3,11 @@ Download all your zoom cloud recordings
 
 Edit cloudlink.py to include your JWT token, the correct path for your downloads, and the USER ID from Zoom's API. 
 
-Here is where you can find instructions on listing a USER ID - https://marketplace.zoom.us/docs/api-reference/zoom-api/users/users
+This requires a JWT token from the Zoom marketplace - https://marketplace.zoom.us
+
+If you have a pro account you can find the USER ID in the URL for your account on this page - https://us02web.zoom.us/account/user#/
+
+Here is where you can find instructions on listing a USER ID from an API endpoint - https://marketplace.zoom.us/docs/api-reference/zoom-api/users/users
 
 Install the requirements listed in requirements.txt 
 
