@@ -2,6 +2,7 @@ appnope==0.1.0
 backcall==0.1.0
 certifi==2023.7.22
 chardet==3.0.4
+colorama>=0.4.4
 decorator==4.4.2
 idna==2.9
 ipython==8.10.0
