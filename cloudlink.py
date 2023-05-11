@@ -11,8 +11,10 @@ import colorama
 import requests
 from colorama import Fore, Style
 
-# Put your JWT token that you get from https://marketplace.zoom.us/ here. 
-JWT = '##########'
+# Zoom API credentials
+ACCOUNT_ID = '##########'
+CLIENT_ID = '##########'
+CLIENT_SECRET = '##########'
 
 # Put your USER ID that you get from the API. 
 USERID = '##########'
@@ -41,14 +43,30 @@ CHUNK_SIZE = 1024**2
 # expected to get below this amount as a result of the new file.
 MINIMUM_FREE_DISK = 1024**3
 
-headers = {
-		'Authorization': 
-		'Bearer {}'.format(JWT),
-		'content-type':
-		'application/json',
-	}
+# Fetched at runtime. No Need to provide.
+ACCESS_TOKEN = ""
 
 colorama.init()
+
+def fetch_token():
+	data = {
+    'grant_type': 'account_credentials',
+    'account_id': ACCOUNT_ID
+	}
+	response = requests.post('https://api.zoom.us/oauth/token', auth=(CLIENT_ID, CLIENT_SECRET),  data=data).json()
+	if 'access_token' not in response:
+		raise Exception(response["reason"])
+
+	global ACCESS_TOKEN
+	ACCESS_TOKEN = response['access_token']
+
+
+# make API requests with access token
+def get_headers(token):
+	return {
+    'Authorization': f'Bearer {token}',
+    'Content-Type': 'application/json'
+	} 
 
 def size_to_string(size_bytes):
    if size_bytes == 0:
@@ -60,6 +78,8 @@ def size_to_string(size_bytes):
    return str(size), units[i]
 
 def main():
+	fetch_token()
+
 	from_date = datetime.datetime(START_YEAR , START_MONTH, START_DAY or 1)
 	to_date = datetime.datetime(END_YEAR, END_MONTH, END_DAY or monthrange(END_YEAR, END_MONTH)[1])
 
@@ -73,7 +93,7 @@ def main():
 	if VERBOSE_OUTPUT:
 		print(Style.DIM + "Searching: " + url + Style.RESET_ALL)
 
-	response = requests.get(url, headers=headers)
+	response = requests.get(url, headers=get_headers(ACCESS_TOKEN))
 	data = response.json()
 
 	file_count, total_size, skipped_count = get_recordings(data)
@@ -196,8 +216,16 @@ def download_recording(download_url, file_name, file_size, topic_name, meeting_n
 
 	check_disk_space(file_size)
 
-	download_access_url = f'{download_url}?access_token={JWT}'
+	download_access_url = f'{download_url}?access_token={ACCESS_TOKEN}'
 	response = requests.get(download_access_url, stream=True)
+
+	if response.status_code == 401:
+		fetch_token()
+		download_access_url = f'{download_url}?access_token={ACCESS_TOKEN}'
+		response = requests.get(download_access_url, stream=True)
+
+	if response.status_code != 200:
+		raise Exception(f'{response.status_code} {response.text}')
 
 	tmp_file_path = file_path + '.tmp'
 	save_to_disk(response, tmp_file_path, file_size)
