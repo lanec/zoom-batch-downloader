@@ -1,3 +1,6 @@
+# WARNING #
+This script was authored to use the JWT API that is now being depreciated and/or is already depreciated depending on if you have a legacy app to use - I am posting this in August 2023 - consider it no longer functional
+
 # zoom-batch-downloader
 Download all your zoom cloud recordings
 
