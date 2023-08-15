@@ -12,7 +12,7 @@ pexpect==4.8.0
 pickleshare==0.7.5
 prompt-toolkit==3.0.4
 ptyprocess==0.6.0
-Pygments==2.7.4
+Pygments==2.15.0
 PyJWT==2.4.0
 requests>=2.23.0
 six==1.14.0
