@@ -55,7 +55,7 @@ def fetch_token():
 	}
 	response = requests.post('https://api.zoom.us/oauth/token', auth=(CLIENT_ID, CLIENT_SECRET),  data=data).json()
 	if 'access_token' not in response:
-		raise Exception(response["reason"])
+		raise Exception(f'Unable to fetch access token: response["reason"] - verify your credentials.')
 
 	global ACCESS_TOKEN
 	ACCESS_TOKEN = response['access_token']
