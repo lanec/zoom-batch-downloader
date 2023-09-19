@@ -87,7 +87,9 @@ def main():
 	from_date_string = from_date.strftime(date_format)
 	to_date_string = to_date.strftime(date_format)
 
-	print("Downloading Videos from user ID {USERID}. Starting at {from_date_string} and up to (inclusive) {to_date_string}.")
+	print(Style.BRIGHT)
+	print(f'Downloading Videos from user ID {USERID}: Starting at {from_date_string} and up to (inclusive) {to_date_string}.')
+	print(Style.RESET_ALL)
 
 	url = f'https://api.zoom.us/v2/users/{USERID}/recordings?from={from_date_string}&to={to_date_string}&page_size=90000000'
 
