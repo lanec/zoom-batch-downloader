@@ -55,7 +55,7 @@ def fetch_token():
 	}
 	response = requests.post('https://api.zoom.us/oauth/token', auth=(CLIENT_ID, CLIENT_SECRET),  data=data).json()
 	if 'access_token' not in response:
-		raise Exception(f'Unable to fetch access token: response["reason"] - verify your credentials.')
+		raise Exception(f'Unable to fetch access token: {response["reason"]} - verify your credentials.')
 
 	global ACCESS_TOKEN
 	ACCESS_TOKEN = response['access_token']
@@ -83,12 +83,13 @@ def main():
 	from_date = datetime.datetime(START_YEAR , START_MONTH, START_DAY or 1)
 	to_date = datetime.datetime(END_YEAR, END_MONTH, END_DAY or monthrange(END_YEAR, END_MONTH)[1])
 
-	date_string = '%Y-%m-%d'
-	url = 'https://api.zoom.us/v2/users/{}/recordings?from={}&to={}&page_size=90000000'.format(
-				USERID,
-				from_date.strftime(date_string),
-				to_date.strftime(date_string)
-			)
+	date_format = '%Y-%m-%d'
+	from_date_string = from_date.strftime(date_format)
+	to_date_string = to_date.strftime(date_format)
+
+	print("Downloading Videos from user ID {USERID}. Starting at {from_date_string} and up to (inclusive) {to_date_string}.")
+
+	url = f'https://api.zoom.us/v2/users/{USERID}/recordings?from={from_date_string}&to={to_date_string}&page_size=90000000'
 
 	if VERBOSE_OUTPUT:
 		print(Style.DIM + "Searching: " + url + Style.RESET_ALL)
