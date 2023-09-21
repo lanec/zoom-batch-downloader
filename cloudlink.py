@@ -52,8 +52,8 @@ colorama.init()
 
 def refresh_token():
 	data = {
-    'grant_type': 'account_credentials',
-    'account_id': ACCOUNT_ID
+		'grant_type': 'account_credentials',
+		'account_id': ACCOUNT_ID
 	}
 	response = requests.post('https://api.zoom.us/oauth/token', auth=(CLIENT_ID, CLIENT_SECRET),  data=data).json()
 	if 'access_token' not in response:
@@ -66,8 +66,8 @@ def refresh_token():
 # make API requests with access token
 def get_headers(token):
 	return {
-    'Authorization': f'Bearer {token}',
-    'Content-Type': 'application/json'
+		'Authorization': f'Bearer {token}',
+		'Content-Type': 'application/json'
 	} 
 
 def size_to_string(size_bytes):
@@ -91,8 +91,6 @@ def main():
 	total_size = 0
 	skipped_count = 0
 
-	users = []
-
 	if not USERIDS:
 		users = get_users()
 	else:
@@ -109,11 +107,9 @@ def main():
 		url = f'https://api.zoom.us/v2/users/{user_id}/recordings?from={from_date_string}&to={to_date_string}&page_size=90000000'
 
 		if VERBOSE_OUTPUT:
-			print(Style.DIM + "Searching: " + url + Style.RESET_ALL)
+			print(f'{Style.DIM}Searching: {url}{Style.RESET_ALL}')
 
-		response = get_with_retry(lambda: requests.get(url, headers=get_headers(ACCESS_TOKEN)))
-
-		data = response.json()
+		data = get_with_retry(lambda: requests.get(url, headers=get_headers(ACCESS_TOKEN))).json()
 
 		user_file_count, user_total_size, user_skipped_count = get_recordings(data)
 
@@ -125,10 +121,13 @@ def main():
 	skipped_count += user_skipped_count
 
 	total_size_str = ''.join(size_to_string(total_size))
-	print(Style.BRIGHT)
-	print("Downloaded", Fore.GREEN + str(file_count) + Fore.RESET,
-		"files. Total size:", Fore.GREEN + total_size_str + Fore.RESET + ".",
-		Style.RESET_ALL + "Skipped:", str(skipped_count), "files.")
+
+	print()
+	print(
+		f'{Style.BRIGHT}Downloaded {Fore.GREEN}{file_count}{Fore.RESET} files.',
+		f'Total size: {Fore.GREEN}{total_size_str}{Fore.RESET}.{Style.RESET_ALL}',
+		f'Skipped: {skipped_count} files.'
+	)
 	
 def get_with_retry(get):
 	response = get()
@@ -145,30 +144,24 @@ def get_with_retry(get):
 def get_users():
 	response = get_with_retry(
 		lambda: requests.get(url="https://api.zoom.us/v2/users", headers=get_headers(ACCESS_TOKEN))
-		)
+	)
 
 	page_count = int(response.json()["page_count"])
 
 	all_users = []
 
 	for page in range(1, page_count + 1):
-		response = get_with_retry(
+		users_data = get_with_retry(
 			lambda: requests.get(url=f"https://api.zoom.us/v2/users?page_number={page}", headers=get_headers(ACCESS_TOKEN))
-		)
-		users_data = response.json()
+		).json()
 
-		users = ([
-			(user_data["id"], get_user_description(user_data))
-			for user_data in users_data["users"]
-		])
-
-		all_users.extend(users)
+		users = [(user_data["id"], get_user_description(user_data)) for user_data in users_data["users"]]
+		all_users += users
 
 	return all_users
 
 def get_user_description(user_data):
 	return f'{user_data["email"]} ({user_data.get("first_name") or ""} {user_data.get("last_name") or ""})'
-
 
 def get_recordings(data):
 	total_size, file_count, skipped_count = 0, 0, 0
@@ -229,7 +222,7 @@ def create_path(file_name, topic_name, meeting_name):
 	os.makedirs(folder_path, exist_ok=True)
 	return os.path.join(folder_path, file_name)
 
-def check_disk_space(file_size):
+def wait_for_disk_space(file_size):
 	file_size_str = ''.join(size_to_string(file_size))
 
 	free_disk = shutil.disk_usage(PATH)[2]
@@ -278,11 +271,11 @@ def download_recording(download_url, file_name, file_size, topic_name, meeting_n
 
 	print(f'{Style.BRIGHT}Downloading: {file_name}{Style.RESET_ALL}')
 
-	check_disk_space(file_size)
+	wait_for_disk_space(file_size)
 
 	response = get_with_retry(
 		lambda: requests.get(f'{download_url}?access_token={ACCESS_TOKEN}', stream=True)
-		)
+	)
 
 	tmp_file_path = file_path + '.tmp'
 	save_to_disk(response, tmp_file_path, file_size)
