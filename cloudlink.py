@@ -37,13 +37,19 @@ GROUP_BY_MEETING = False
 # Set to true for more verbose output
 VERBOSE_OUTPUT = False
 
+# Constants used for indicating size in bytes.
+KB = 1024
+MB = 1024 * KB
+GB = 1024 * MB
+TB = 1024 * GB
+
 # Chunk size in bytes, determines the rate at which progress is reported, you might want to change it depending
 # on your internet speed.
-CHUNK_SIZE = 1024**2
+CHUNK_SIZE = 1 * MB
 
 # Minimum free disk space in bytes for downloads to happen, downloading will be stalled if disk space is
 # expected to get below this amount as a result of the new file.
-MINIMUM_FREE_DISK = 1024**3
+MINIMUM_FREE_DISK = 1 * GB
 
 # Fetched at runtime. No Need to provide.
 ACCESS_TOKEN = ""
