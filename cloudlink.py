@@ -16,8 +16,10 @@ ACCOUNT_ID = '##########'
 CLIENT_ID = '##########'
 CLIENT_SECRET = '##########'
 
-# Put your USER ID that you get from the API. 
-USERID = '##########'
+# Put your USER IDs that you get from the API. If empty, all data from all users will be downloaded.
+USERIDS = [
+	# '##########'
+]
 
 # Put your own download path here, I used an external hard drive so mine will differ from yours
 PATH = '/Volumes/Ext3/Zoom/'
@@ -48,7 +50,7 @@ ACCESS_TOKEN = ""
 
 colorama.init()
 
-def fetch_token():
+def refresh_token():
 	data = {
     'grant_type': 'account_credentials',
     'account_id': ACCOUNT_ID
@@ -78,8 +80,6 @@ def size_to_string(size_bytes):
    return str(size), units[i]
 
 def main():
-	fetch_token()
-
 	from_date = datetime.datetime(START_YEAR , START_MONTH, START_DAY or 1)
 	to_date = datetime.datetime(END_YEAR, END_MONTH, END_DAY or monthrange(END_YEAR, END_MONTH)[1])
 
@@ -87,42 +87,84 @@ def main():
 	from_date_string = from_date.strftime(date_format)
 	to_date_string = to_date.strftime(date_format)
 
-	print(Style.BRIGHT)
-	print(f'Downloading Videos from user ID {USERID}: Starting at {from_date_string} and up to (inclusive) {to_date_string}.')
-	print(Style.RESET_ALL)
+	file_count = 0
+	total_size = 0
+	skipped_count = 0
 
-	url = f'https://api.zoom.us/v2/users/{USERID}/recordings?from={from_date_string}&to={to_date_string}&page_size=90000000'
+	users = []
 
-	if VERBOSE_OUTPUT:
-		print(Style.DIM + "Searching: " + url + Style.RESET_ALL)
+	if not USERIDS:
+		users = get_users()
+	else:
+		users = [(id, "") for id in USERIDS]
 
-	response = requests.get(url, headers=get_headers(ACCESS_TOKEN))
-	data = response.json()
+	for user_id, user_description in users:
 
-	file_count, total_size, skipped_count = get_recordings(data)
-	
+		user = f'{user_description}. ID: {user_id}' if user_description else f'ID: {user_id}'
+
+		print(Style.BRIGHT)
+		print(f'Downloading videos from user {user} - Starting at {from_date_string} and up to (inclusive) {to_date_string}.')
+		print(Style.RESET_ALL)
+
+		url = f'https://api.zoom.us/v2/users/{user_id}/recordings?from={from_date_string}&to={to_date_string}&page_size=90000000'
+
+		if VERBOSE_OUTPUT:
+			print(Style.DIM + "Searching: " + url + Style.RESET_ALL)
+
+		response = get_with_retry(lambda: requests.get(url, headers=get_headers(ACCESS_TOKEN)))
+
+		data = response.json()
+
+		user_file_count, user_total_size, user_skipped_count = get_recordings(data)
+
+		print(f'{Style.BRIGHT}==============================================================={Style.RESET_ALL}')
+		
+
+	file_count += user_file_count
+	total_size += user_total_size
+	skipped_count += user_skipped_count
+
 	total_size_str = ''.join(size_to_string(total_size))
-
 	print(Style.BRIGHT)
 	print("Downloaded", Fore.GREEN + str(file_count) + Fore.RESET,
-		  "files. Total size:", Fore.GREEN + total_size_str + Fore.RESET + ".",
-		  Style.RESET_ALL + "Skipped:", str(skipped_count), "files.")
+		"files. Total size:", Fore.GREEN + total_size_str + Fore.RESET + ".",
+		Style.RESET_ALL + "Skipped:", str(skipped_count), "files.")
+	
+def get_with_retry(get):
+	response = get()
+	
+	if response.status_code == 401:
+		refresh_token()
+		response = get()
 
-def slugify(value, allow_unicode=True):
-    """
-    Taken from https://github.com/django/django/blob/master/django/utils/text.py
-    Convert to ASCII if 'allow_unicode' is False. Convert spaces or repeated
-    dashes to single dashes. Remove characters that aren't alphanumerics,
-    underscores, or hyphens. Convert to lowercase. Also strip leading and
-    trailing whitespace, dashes, and underscores.
-    """
-    value = str(value)
-    if allow_unicode:
-        value = unicodedata.normalize('NFKC', value)
-    else:
-        value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore').decode('ascii')
-    value = re.sub(r'[^\w\s-]', '', value.lower())
-    return re.sub(r'[-\s]+', '-', value).strip('-_')
+	if not response.ok:
+		raise Exception(f'{response.status_code} {response.text}')
+	
+	return response
+	
+def get_users():
+	response = get_with_retry(
+		lambda: requests.get(url="https://api.zoom.us/v2/users", headers=get_headers(ACCESS_TOKEN))
+		)
+
+	page_count = int(response.json()["page_count"])
+
+	all_users = []
+
+	for page in range(1, page_count + 1):
+		response = get_with_retry(
+			lambda: requests.get(url=f"https://api.zoom.us/v2/users?page_number={page}", headers=get_headers(ACCESS_TOKEN))
+		)
+		user_data = response.json()
+
+		users = ([
+			(user["id"], f'{user["email"]} ({user["first_name"]} {user["last_name"]})') 
+			for user in user_data["users"]
+		])
+
+		all_users.extend(users)
+
+	return all_users
 
 
 def get_recordings(data):
@@ -156,6 +198,22 @@ def get_recordings(data):
 				skipped_count += 1
 	
 	return file_count, total_size, skipped_count
+
+def slugify(value, allow_unicode=True):
+    """
+    Taken from https://github.com/django/django/blob/master/django/utils/text.py
+    Convert to ASCII if 'allow_unicode' is False. Convert spaces or repeated
+    dashes to single dashes. Remove characters that aren't alphanumerics,
+    underscores, or hyphens. Convert to lowercase. Also strip leading and
+    trailing whitespace, dashes, and underscores.
+    """
+    value = str(value)
+    if allow_unicode:
+        value = unicodedata.normalize('NFKC', value)
+    else:
+        value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore').decode('ascii')
+    value = re.sub(r'[^\w\s-]', '', value.lower())
+    return re.sub(r'[-\s]+', '-', value).strip('-_')
 
 def create_path(file_name, topic_name, meeting_name):
 	folder_path = PATH
@@ -219,16 +277,9 @@ def download_recording(download_url, file_name, file_size, topic_name, meeting_n
 
 	check_disk_space(file_size)
 
-	download_access_url = f'{download_url}?access_token={ACCESS_TOKEN}'
-	response = requests.get(download_access_url, stream=True)
-
-	if response.status_code == 401:
-		fetch_token()
-		download_access_url = f'{download_url}?access_token={ACCESS_TOKEN}'
-		response = requests.get(download_access_url, stream=True)
-
-	if response.status_code != 200:
-		raise Exception(f'{response.status_code} {response.text}')
+	response = get_with_retry(
+		lambda: requests.get(f'{download_url}?access_token={ACCESS_TOKEN}', stream=True)
+		)
 
 	tmp_file_path = file_path + '.tmp'
 	save_to_disk(response, tmp_file_path, file_size)
