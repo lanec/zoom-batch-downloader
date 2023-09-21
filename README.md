@@ -1,7 +1,7 @@
 # zoom-batch-downloader
 Download all your zoom cloud recordings
 
-Edit cloudlink.py to include your credentials, the correct path for your downloads, and the USER ID from Zoom's API. 
+Edit cloudlink.py to include your credentials, the correct path for your downloads, and the USER ID (optional) from Zoom's API.
 
 This requires server-to-server credentials from the Zoom marketplace - https://marketplace.zoom.us
 
