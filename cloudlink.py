@@ -155,16 +155,19 @@ def get_users():
 		response = get_with_retry(
 			lambda: requests.get(url=f"https://api.zoom.us/v2/users?page_number={page}", headers=get_headers(ACCESS_TOKEN))
 		)
-		user_data = response.json()
+		users_data = response.json()
 
 		users = ([
-			(user["id"], f'{user["email"]} ({user["first_name"]} {user["last_name"]})') 
-			for user in user_data["users"]
+			(user_data["id"], get_user_description(user_data))
+			for user_data in users_data["users"]
 		])
 
 		all_users.extend(users)
 
 	return all_users
+
+def get_user_description(user_data):
+	return f'{user_data["email"]} ({user_data.get("first_name") or ""} {user_data.get("last_name") or ""})'
 
 
 def get_recordings(data):
