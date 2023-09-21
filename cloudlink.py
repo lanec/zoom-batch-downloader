@@ -62,8 +62,6 @@ def refresh_token():
 	global ACCESS_TOKEN
 	ACCESS_TOKEN = response['access_token']
 
-
-# make API requests with access token
 def get_headers(token):
 	return {
 		'Authorization': f'Bearer {token}',
@@ -72,8 +70,8 @@ def get_headers(token):
 
 def size_to_string(size_bytes):
    if size_bytes == 0:
-       return "0", "B"
-   units = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+       return '0', 'B'
+   units = ('B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB')
    i = int(math.floor(math.log(size_bytes, 1024)))
    p = 1024**i
    size = round(size_bytes / p, 2)
@@ -94,7 +92,7 @@ def main():
 	if not USERIDS:
 		users = get_users()
 	else:
-		users = [(id, "") for id in USERIDS]
+		users = [(id, '') for id in USERIDS]
 
 	for user_id, user_description in users:
 
@@ -109,7 +107,7 @@ def main():
 		if VERBOSE_OUTPUT:
 			print(f'{Style.DIM}Searching: {url}{Style.RESET_ALL}')
 
-		data = get_with_retry(lambda: requests.get(url, headers=get_headers(ACCESS_TOKEN))).json()
+		data = get_with_token(lambda t: requests.get(url, headers=get_headers(t))).json()
 
 		user_file_count, user_total_size, user_skipped_count = get_recordings(data)
 
@@ -129,12 +127,12 @@ def main():
 		f'Skipped: {skipped_count} files.'
 	)
 	
-def get_with_retry(get):
-	response = get()
+def get_with_token(get):
+	response = get(ACCESS_TOKEN)
 	
 	if response.status_code == 401:
 		refresh_token()
-		response = get()
+		response = get(ACCESS_TOKEN)
 
 	if not response.ok:
 		raise Exception(f'{response.status_code} {response.text}')
@@ -142,21 +140,19 @@ def get_with_retry(get):
 	return response
 	
 def get_users():
-	response = get_with_retry(
-		lambda: requests.get(url="https://api.zoom.us/v2/users", headers=get_headers(ACCESS_TOKEN))
-	)
-
-	page_count = int(response.json()["page_count"])
+	users_data = get_with_token(
+		lambda t: requests.get(url='https://api.zoom.us/v2/users', headers=get_headers(t))
+	).json()
 
 	all_users = []
 
-	for page in range(1, page_count + 1):
-		users_data = get_with_retry(
-			lambda: requests.get(url=f"https://api.zoom.us/v2/users?page_number={page}", headers=get_headers(ACCESS_TOKEN))
+	page_count = int(users_data['page_count'])
+	for page_number in range(1, page_count + 1):
+		page = get_with_token(
+			lambda t: requests.get(url=f'https://api.zoom.us/v2/users?page_number={page_number}', headers=get_headers(t))
 		).json()
 
-		users = [(user_data["id"], get_user_description(user_data)) for user_data in users_data["users"]]
-		all_users += users
+		all_users += [(user['id'], get_user_description(user)) for user in page['users']]
 
 	return all_users
 
@@ -239,21 +235,21 @@ def save_to_disk(response, file_path, file_size):
 
 	size, size_length = 0, 0
 
-	print(Fore.CYAN, end="")
+	print(Fore.CYAN, end='')
 
 	with open(file_path, 'wb') as file:
 		size_str1, size_str2 = size_to_string(size)
-		print(f'\r{size_str1: <{size_length}}{size_str2} / {file_size_str}', end="\r")
+		print(f'\r{size_str1: <{size_length}}{size_str2} / {file_size_str}', end='\r')
 		
 		chunk: int
 		for chunk in response.iter_content(chunk_size=CHUNK_SIZE):
 			size += len(chunk)
 			if size >= file_size:
-				print(Fore.GREEN, end="")
+				print(Fore.GREEN, end='')
 
 			size_str1, size_str2 = size_to_string(size)
 			size_length = max(size_length, len(size_str1))
-			print(f'\r{size_str1: <{size_length}}{size_str2} / {file_size_str}', end="\r")
+			print(f'\r{size_str1: <{size_length}}{size_str2} / {file_size_str}', end='\r')
 
 			file.write(chunk)
 
@@ -273,8 +269,8 @@ def download_recording(download_url, file_name, file_size, topic_name, meeting_n
 
 	wait_for_disk_space(file_size)
 
-	response = get_with_retry(
-		lambda: requests.get(f'{download_url}?access_token={ACCESS_TOKEN}', stream=True)
+	response = get_with_token(
+		lambda t: requests.get(f'{download_url}?access_token={t}', stream=True)
 	)
 
 	tmp_file_path = file_path + '.tmp'
@@ -288,9 +284,9 @@ if __name__ == '__main__':
 	try:
 		main()
 	except Exception as error:
-		print(Fore.RED + Style.BRIGHT)
-		print("Error:", error, end="")
-		print(Style.RESET_ALL)
+		print()
+		print(f'{Fore.RED + Style.BRIGHT}Error: {error}{Style.RESET_ALL}')
+		print()
 
 	print()
-	input("Press Enter to exit...")
+	input('Press Enter to exit...')
