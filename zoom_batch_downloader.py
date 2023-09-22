@@ -16,9 +16,9 @@ ACCOUNT_ID = '##########'
 CLIENT_ID = '##########'
 CLIENT_SECRET = '##########'
 
-# Put your USER IDs that you get from the API. If empty, all data from all users will be downloaded.
-USERIDS = [
-	# '##########'
+# Put here emails of the users you want to check for recordings. If empty, all users in the accounts will be checked.
+USERS = [
+	# '####@####.####'
 ]
 
 # Put your own download path here, I used an external hard drive so mine will differ from yours
@@ -54,22 +54,7 @@ CHUNK_SIZE = 1 * MB
 # expected to get below this amount as a result of the new file.
 MINIMUM_FREE_DISK = 1 * GB
 
-# Fetched at runtime. No Need to provide.
-ACCESS_TOKEN = ""
-
 colorama.init()
-
-def refresh_token():
-	data = {
-		'grant_type': 'account_credentials',
-		'account_id': ACCOUNT_ID
-	}
-	response = requests.post('https://api.zoom.us/oauth/token', auth=(CLIENT_ID, CLIENT_SECRET),  data=data).json()
-	if 'access_token' not in response:
-		raise Exception(f'Unable to fetch access token: {response["reason"]} - verify your credentials.')
-
-	global ACCESS_TOKEN
-	ACCESS_TOKEN = response['access_token']
 
 def get_headers(token):
 	return {
@@ -98,20 +83,20 @@ def main():
 	total_size = 0
 	skipped_count = 0
 
-	if not USERIDS:
+	if not USERS:
 		users = get_users()
 	else:
-		users = [(id, '', '') for id in USERIDS]
+		users = [(email, '') for email in USERS]
 
-	for user_id, user_email, user_name in users:
-		user_description = get_user_description(user_id, user_email, user_name)
-		user_host_folder = get_user_host_folder(user_id, user_email)
+	for user_email, user_name in users:
+		user_description = get_user_description(user_email, user_name)
+		user_host_folder = get_user_host_folder(user_email)
 
 		print(Style.BRIGHT)
 		print(f'Downloading videos from user {user_description} - Starting at {from_date_string} and up to (inclusive) {to_date_string}.')
 		print(Style.RESET_ALL)
 
-		url = f'https://api.zoom.us/v2/users/{user_id}/recordings?from={from_date_string}&to={to_date_string}&page_size=90000000'
+		url = f'https://api.zoom.us/v2/users/{user_email}/recordings?from={from_date_string}&to={to_date_string}&page_size=300'
 
 		if VERBOSE_OUTPUT:
 			print(f'{Style.DIM}Searching: {url}{Style.RESET_ALL}')
@@ -136,28 +121,38 @@ def main():
 		f'Skipped: {skipped_count} files.'
 	)
 
-def get_user_description(user_id, user_email, user_name):
-	part_1 = f'{user_email} ({user_name})' if (user_name) else user_email
-	return f'{part_1} ID: {user_id}' if part_1 else f'ID: {user_id}'
+def get_user_description(user_email, user_name):
+	return f'{user_email} ({user_name})' if (user_name) else user_email
 
-def get_user_host_folder(user_id, user_email):
+def get_user_host_folder(user_email):
 	if GROUP_BY_USER:
-		folder_name = f'{user_email}__{user_id}' if user_email else user_id
-		return os.path.join(PATH, folder_name)
+		return os.path.join(PATH, user_email)
 	else:
 		return PATH
 	
 def get_with_token(get):
-	response = get(ACCESS_TOKEN)
+	cached_token = getattr(get_with_token, 'token', '')
+	response = get(cached_token)
 	
 	if response.status_code == 401:
-		refresh_token()
-		response = get(ACCESS_TOKEN)
+		get_with_token.token = fetch_token()
+		response = get(get_with_token.token)
 
 	if not response.ok:
 		raise Exception(f'{response.status_code} {response.text}')
 	
 	return response
+
+def fetch_token():
+	data = {
+		'grant_type': 'account_credentials',
+		'account_id': ACCOUNT_ID
+	}
+	response = requests.post('https://api.zoom.us/oauth/token', auth=(CLIENT_ID, CLIENT_SECRET),  data=data).json()
+	if 'access_token' not in response:
+		raise Exception(f'Unable to fetch access token: {response["reason"]} - verify your credentials.')
+
+	return response['access_token']
 	
 def get_users():
 	users_data = get_with_token(
@@ -172,12 +167,18 @@ def get_users():
 			lambda t: requests.get(url=f'https://api.zoom.us/v2/users?page_number={page_number}', headers=get_headers(t))
 		).json()
 
-		all_users += [(user['id'], user['email'], get_user_name(user)) for user in page['users']]
+		all_users += [(user['email'], get_user_name(user)) for user in page['users']]
 
 	return all_users
 
 def get_user_name(user_data):
-	return f'({user_data.get("first_name") or ""} {user_data.get("last_name") or ""})'
+	first_name = user_data.get("first_name")
+	last_name = user_data.get("last_name")
+
+	if first_name and last_name:
+		return f'{first_name} {last_name}'
+	else:
+		return first_name or last_name
 
 def get_recordings(data, host_folder):
 	total_size, file_count, skipped_count = 0, 0, 0
