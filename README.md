@@ -23,4 +23,6 @@ pip install -r requirements.txt
 python zoom_batch_downloader.py
 ```
 
+Note: You might need to [Enable long paths in Windows](https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=registry#enable-long-paths-in-windows-10-version-1607-and-later) as some downloaded files paths can get a bit long.
+
 Code written by Georg Kasmin, Lane Campbell and Aness Zurba
