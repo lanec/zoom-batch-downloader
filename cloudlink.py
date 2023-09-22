@@ -28,11 +28,14 @@ PATH = '/Volumes/Ext3/Zoom/'
 START_DAY, START_MONTH, START_YEAR = None, 5, 2020
 END_DAY, END_MONTH, END_YEAR = None , 3, 2022
 
+# If true, recordings will be grouped in folders by their owning user.
+GROUP_BY_USER = True
+
 # If true, recordings will be grouped in folders by their topics
 GROUP_BY_TOPIC = True
 
-# If true, recordings will be grouped in folders by their meetings name
-GROUP_BY_MEETING = False
+# If true, each instance of recording will be in its own folder (which may contain multiple files).
+GROUP_BY_RECORDING = False
 
 # Set to true for more verbose output
 VERBOSE_OUTPUT = False
@@ -98,14 +101,14 @@ def main():
 	if not USERIDS:
 		users = get_users()
 	else:
-		users = [(id, '') for id in USERIDS]
+		users = [(id, '', '') for id in USERIDS]
 
-	for user_id, user_description in users:
-
-		user = f'{user_description}. ID: {user_id}' if user_description else f'ID: {user_id}'
+	for user_id, user_email, user_name in users:
+		user_description = get_user_description(user_id, user_email, user_name)
+		user_host_folder = get_user_host_folder(user_id, user_email)
 
 		print(Style.BRIGHT)
-		print(f'Downloading videos from user {user} - Starting at {from_date_string} and up to (inclusive) {to_date_string}.')
+		print(f'Downloading videos from user {user_description} - Starting at {from_date_string} and up to (inclusive) {to_date_string}.')
 		print(Style.RESET_ALL)
 
 		url = f'https://api.zoom.us/v2/users/{user_id}/recordings?from={from_date_string}&to={to_date_string}&page_size=90000000'
@@ -115,7 +118,7 @@ def main():
 
 		data = get_with_token(lambda t: requests.get(url, headers=get_headers(t))).json()
 
-		user_file_count, user_total_size, user_skipped_count = get_recordings(data)
+		user_file_count, user_total_size, user_skipped_count = get_recordings(data, user_host_folder)
 
 		print(f'{Style.BRIGHT}==============================================================={Style.RESET_ALL}')
 		
@@ -132,6 +135,17 @@ def main():
 		f'Total size: {Fore.GREEN}{total_size_str}{Fore.RESET}.{Style.RESET_ALL}',
 		f'Skipped: {skipped_count} files.'
 	)
+
+def get_user_description(user_id, user_email, user_name):
+	part_1 = f'{user_email} ({user_name})' if (user_name) else user_email
+	return f'{part_1} ID: {user_id}' if part_1 else f'ID: {user_id}'
+
+def get_user_host_folder(user_id, user_email):
+	if GROUP_BY_USER:
+		folder_name = f'{user_email}__{user_id}' if user_email else user_id
+		return os.path.join(PATH, folder_name)
+	else:
+		return PATH
 	
 def get_with_token(get):
 	response = get(ACCESS_TOKEN)
@@ -158,14 +172,14 @@ def get_users():
 			lambda t: requests.get(url=f'https://api.zoom.us/v2/users?page_number={page_number}', headers=get_headers(t))
 		).json()
 
-		all_users += [(user['id'], get_user_description(user)) for user in page['users']]
+		all_users += [(user['id'], user['email'], get_user_name(user)) for user in page['users']]
 
 	return all_users
 
-def get_user_description(user_data):
-	return f'{user_data["email"]} ({user_data.get("first_name") or ""} {user_data.get("last_name") or ""})'
+def get_user_name(user_data):
+	return f'({user_data.get("first_name") or ""} {user_data.get("last_name") or ""})'
 
-def get_recordings(data):
+def get_recordings(data, host_folder):
 	total_size, file_count, skipped_count = 0, 0, 0
 
 	if 'code' in data:
@@ -176,17 +190,18 @@ def get_recordings(data):
 			if record['status'] != 'completed':
 				continue
 
-			topic_name = slugify(meeting["topic"])
-			file_size = record["file_size"]
-			ext = slugify(record["file_extension"])
-			meeting_name = slugify(f'{topic_name}__{record["recording_start"]}')
-			file_name = slugify(f'{meeting_name}__{record["recording_type"]}')
+			topic_name = slugify(meeting['topic'])
+			file_size = record['file_size']
+			ext = slugify(record['file_extension'])
+			record_name = slugify(f'{topic_name}__{record["recording_start"]}')
+			file_name = slugify(f'{record_name}__{record["recording_type"]}')
 			downloaded = download_recording(
 				record['download_url'], 
+				host_folder,
 				f'{file_name}.{ext}',
 				file_size,
 				topic_name,
-				meeting_name
+				record_name
 			)
 
 			if downloaded:
@@ -213,16 +228,40 @@ def slugify(value, allow_unicode=True):
     value = re.sub(r'[^\w\s-]', '', value.lower())
     return re.sub(r'[-\s]+', '-', value).strip('-_')
 
-def create_path(file_name, topic_name, meeting_name):
-	folder_path = PATH
+def create_path(host_folder, file_name, topic_name, record_name):
+	folder_path = host_folder
 
 	if GROUP_BY_TOPIC:
 		folder_path = os.path.join(folder_path, topic_name)
-	if GROUP_BY_MEETING:
-		folder_path = os.path.join(folder_path, meeting_name)
+	if GROUP_BY_RECORDING:
+		folder_path = os.path.join(folder_path, record_name)
 
 	os.makedirs(folder_path, exist_ok=True)
 	return os.path.join(folder_path, file_name)
+
+def download_recording(download_url, host_folder, file_name, file_size, topic_name, meeting_name):
+	if VERBOSE_OUTPUT:
+		print(Style.BRIGHT + f'Found: {download_url}' + Style.RESET_ALL)
+
+	file_path = create_path(host_folder, file_name, topic_name, meeting_name)
+
+	if os.path.exists(file_path) and os.path.getsize(file_path) == file_size:
+		print(f'{Style.DIM}Skipping existing file: {file_name}{Style.RESET_ALL}')
+		return False
+
+	print(f'{Style.BRIGHT}Downloading: {file_name}{Style.RESET_ALL}')
+
+	wait_for_disk_space(file_size)
+
+	response = get_with_token(
+		lambda t: requests.get(f'{download_url}?access_token={t}', stream=True)
+	)
+
+	tmp_file_path = file_path + '.tmp'
+	save_to_disk(response, tmp_file_path, file_size)
+	os.rename(tmp_file_path, file_path)
+
+	return True
 
 def wait_for_disk_space(file_size):
 	file_size_str = ''.join(size_to_string(file_size))
@@ -260,31 +299,6 @@ def save_to_disk(response, file_path, file_size):
 			file.write(chunk)
 
 	print(Style.RESET_ALL)
-
-def download_recording(download_url, file_name, file_size, topic_name, meeting_name):
-	if VERBOSE_OUTPUT:
-		print(Style.BRIGHT + f'Found: {download_url}' + Style.RESET_ALL)
-
-	file_path = create_path(file_name, topic_name, meeting_name)
-
-	if os.path.exists(file_path) and os.path.getsize(file_path) == file_size:
-		print(f'{Style.DIM}Skipping existing file: {file_name}{Style.RESET_ALL}')
-		return False
-
-	print(f'{Style.BRIGHT}Downloading: {file_name}{Style.RESET_ALL}')
-
-	wait_for_disk_space(file_size)
-
-	response = get_with_token(
-		lambda t: requests.get(f'{download_url}?access_token={t}', stream=True)
-	)
-
-	tmp_file_path = file_path + '.tmp'
-	save_to_disk(response, tmp_file_path, file_size)
-	os.rename(tmp_file_path, file_path)
-
-	return True
-
 	   
 if __name__ == '__main__':
 	try:
