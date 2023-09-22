@@ -1,19 +1,18 @@
 # zoom-batch-downloader
+
 Download all your zoom cloud recordings
 
-Edit zoom_batch_downloader.py to include your credentials and the correct path for your downloads.
+This script requires [server-to-server](https://developers.zoom.us/docs/internal-apps/) credentials from the [Zoom marketplace](https://marketplace.zoom.us/user/build)
 
-This requires [server-to-server](https://developers.zoom.us/docs/internal-apps/) credentials from the [Zoom marketplace](https://marketplace.zoom.us/user/build)
+1. Edit zoom_batch_downloader.py to include your credentials and the correct path for your downloads.
 
-Install the requirements listed in requirements.txt 
+2. Install the requirements listed in requirements.txt using [pip](https://pip.pypa.io/en/stable/reference/requirement-specifiers/)
 
-If you haven't done that before you will need to use [pip](https://pip.pypa.io/en/stable/reference/requirement-specifiers/)
+3. Run zoom_batch_downloader.py to download the recording to the path you specified.
 
 ```
 pip install -r requirements.txt
 python zoom_batch_downloader.py
 ```
-
-That will download all the recordings wherever you specify. 
 
 Code written by Georg Kasmin, Lane Campbell and Aness Zurba
