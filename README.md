@@ -9,7 +9,7 @@ Install the requirements listed in requirements.txt
 
 If you haven't done that before you will need to use [pip](https://pip.pypa.io/en/stable/reference/requirement-specifiers/)
 
-```python
+```
 pip install -r requirements.txt
 python zoom_batch_downloader.py
 ```
