@@ -12,7 +12,7 @@ Instructions:
 
 1. Create a server-to-server app as specified above and activate it (no need to publish).
 
-1. Edit zoom_batch_downloader.py to include your credentials and the correct path for your downloads.
+1. Copy config_template.py to a new file called config.py and edit it to include your credentials and the correct path for your downloads.
 
 1. Install the requirements listed in requirements.txt using [pip](https://pip.pypa.io/en/stable/reference/requirement-specifiers/).
 
