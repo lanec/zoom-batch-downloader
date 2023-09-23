@@ -97,9 +97,7 @@ def get_user_name(user_data):
 		return first_name or last_name
 	
 def download_recordings(users, from_date_str, to_date_str):
-	file_count = 0
-	total_size = 0
-	skipped_count = 0
+	file_count, total_size, skipped_count = 0, 0, 0
 
 	for user_email, user_name in users:
 		user_description = get_user_description(user_email, user_name)
@@ -132,32 +130,24 @@ def get_user_host_folder(user_email):
 
 def get_meetings(user_email, from_date_str, to_date_str):
 	url = f'https://api.zoom.us/v2/users/{user_email}/recordings?from={from_date_str}&to={to_date_str}'
-	
 	return paginate_reduce(url, [], lambda meetings, page: meetings + page['meetings'])
 
 def download_recordings_from_meetings(meetings, host_folder):
-	total_size, file_count, skipped_count = 0, 0, 0
+	file_count, total_size, skipped_count = 0, 0, 0
 
 	for meeting in meetings:
-		for record in meeting['recording_files']:
-			if record['status'] != 'completed':
+		for recording_file in meeting['recording_files']:
+			if recording_file['status'] != 'completed':
 				continue
 
-			topic_name = utils.slugify(meeting['topic'])
-			file_size = record['file_size']
-			ext = utils.slugify(record['file_extension'])
-			record_name = utils.slugify(f'{topic_name}__{record["recording_start"]}')
-			file_name = utils.slugify(f'{record_name}__{record["recording_type"]}')
-			downloaded = download_recording(
-				record['download_url'], 
-				host_folder,
-				f'{file_name}.{ext}',
-				file_size,
-				topic_name,
-				record_name
-			)
+			url = recording_file['download_url']
+			topic = utils.slugify(meeting['topic'])
+			ext = utils.slugify(recording_file['file_extension'])
+			recording_name = utils.slugify(f'{topic}__{recording_file["recording_start"]}')
+			file_name = utils.slugify(f'{recording_name}__{recording_file["recording_type"]}') + '.' + ext
+			file_size = int(recording_file['file_size'])
 
-			if downloaded:
+			if download_recording_file(url, host_folder, file_name, file_size, topic, recording_name):
 				total_size += file_size
 				file_count += 1
 			else:
@@ -165,12 +155,12 @@ def download_recordings_from_meetings(meetings, host_folder):
 	
 	return file_count, total_size, skipped_count
 
-def download_recording(download_url, host_folder, file_name, file_size, topic_name, meeting_name):
+def download_recording_file(download_url, host_folder, file_name, file_size, topic, recording_name):
 	if CONFIG.VERBOSE_OUTPUT:
 		print()
 		utils.print_dim(f'Found: {download_url}')
 
-	file_path = create_path(host_folder, file_name, topic_name, meeting_name)
+	file_path = create_path(host_folder, file_name, topic, recording_name)
 
 	if os.path.exists(file_path) and os.path.getsize(file_path) == file_size:
 		utils.print_dim(f'Skipping existing file: {file_name}')
@@ -191,13 +181,13 @@ def download_recording(download_url, host_folder, file_name, file_size, topic_na
 
 	return True
 
-def create_path(host_folder, file_name, topic_name, record_name):
+def create_path(host_folder, file_name, topic, recording_name):
 	folder_path = host_folder
 
 	if CONFIG.GROUP_BY_TOPIC:
-		folder_path = os.path.join(folder_path, topic_name)
+		folder_path = os.path.join(folder_path, topic)
 	if CONFIG.GROUP_BY_RECORDING:
-		folder_path = os.path.join(folder_path, record_name)
+		folder_path = os.path.join(folder_path, recording_name)
 
 	os.makedirs(folder_path, exist_ok=True)
 	return os.path.join(folder_path, file_name)
