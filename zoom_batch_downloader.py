@@ -105,67 +105,13 @@ def get_users():
 		lambda users, page: users + [(user['email'], get_user_name(user)) for user in page['users']]
 	)
 
-def get_user_description(user_email, user_name):
-	return f'{user_email} ({user_name})' if (user_name) else user_email
-
-def get_user_host_folder(user_email):
-	if GROUP_BY_USER:
-		return os.path.join(PATH, user_email)
-	else:
-		return PATH
-
-def get_meetings(user_email, from_date_string, to_date_string):
-	url = f'https://api.zoom.us/v2/users/{user_email}/recordings?from={from_date_string}&to={to_date_string}'
-	
-	return paginate_reduce(url, [], lambda meetings, page: meetings + page['meetings'])
-
-def get_headers(token):
-	return {
-		'Authorization': f'Bearer {token}',
-		'Content-Type': 'application/json'
-	} 
-
-def size_to_string(size_bytes):
-   if size_bytes == 0:
-       return '0B'
-   units = ('B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB')
-   i = int(math.floor(math.log(size_bytes, 1024)))
-   p = 1024**i
-   size = round(size_bytes / p, 2)
-   return f'{size}{units[i]}'
-
-def get_with_token(get):
-	cached_token = getattr(get_with_token, 'token', '')
-	response = get(cached_token)
-	
-	if response.status_code == 401:
-		get_with_token.token = fetch_token()
-		response = get(get_with_token.token)
-
-	if not response.ok:
-		raise Exception(f'{response.status_code} {response.text}')
-	
-	return response
-
-def fetch_token():
-	data = {
-		'grant_type': 'account_credentials',
-		'account_id': ACCOUNT_ID
-	}
-	response = requests.post('https://api.zoom.us/oauth/token', auth=(CLIENT_ID, CLIENT_SECRET),  data=data).json()
-	if 'access_token' not in response:
-		raise Exception(f'Unable to fetch access token: {response["reason"]} - verify your credentials.')
-
-	return response['access_token']
-
 def paginate_reduce(url, initial, reduce):
-	initial_url = add_url_params(url, {'page_size': 1})
+	initial_url = add_url_params(url, {'page_size': 300})
 	page = get_with_token(
 		lambda t: requests.get(url=initial_url, headers=get_headers(t))
 	).json()
 
 	result = initial
-
 	while page:
 		result = reduce(result, page)
 
@@ -219,6 +165,36 @@ def add_url_params(url, params):
 
     return new_url
 
+def get_with_token(get):
+	cached_token = getattr(get_with_token, 'token', '')
+	response = get(cached_token)
+	
+	if response.status_code == 401:
+		get_with_token.token = fetch_token()
+		response = get(get_with_token.token)
+
+	if not response.ok:
+		raise Exception(f'{response.status_code} {response.text}')
+	
+	return response
+
+def fetch_token():
+	data = {
+		'grant_type': 'account_credentials',
+		'account_id': ACCOUNT_ID
+	}
+	response = requests.post('https://api.zoom.us/oauth/token', auth=(CLIENT_ID, CLIENT_SECRET),  data=data).json()
+	if 'access_token' not in response:
+		raise Exception(f'Unable to fetch access token: {response["reason"]} - verify your credentials.')
+
+	return response['access_token']
+
+def get_headers(token):
+	return {
+		'Authorization': f'Bearer {token}',
+		'Content-Type': 'application/json'
+	} 
+
 def get_user_name(user_data):
 	first_name = user_data.get("first_name")
 	last_name = user_data.get("last_name")
@@ -227,6 +203,20 @@ def get_user_name(user_data):
 		return f'{first_name} {last_name}'
 	else:
 		return first_name or last_name
+
+def get_user_description(user_email, user_name):
+	return f'{user_email} ({user_name})' if (user_name) else user_email
+
+def get_user_host_folder(user_email):
+	if GROUP_BY_USER:
+		return os.path.join(PATH, user_email)
+	else:
+		return PATH
+
+def get_meetings(user_email, from_date_string, to_date_string):
+	url = f'https://api.zoom.us/v2/users/{user_email}/recordings?from={from_date_string}&to={to_date_string}'
+	
+	return paginate_reduce(url, [], lambda meetings, page: meetings + page['meetings'])
 
 def download_recordings(meetings, host_folder):
 	total_size, file_count, skipped_count = 0, 0, 0
@@ -274,17 +264,6 @@ def slugify(value, allow_unicode=True):
     value = re.sub(r'[^\w\s-]', '', value.lower())
     return re.sub(r'[-\s]+', '-', value).strip('-_')
 
-def create_path(host_folder, file_name, topic_name, record_name):
-	folder_path = host_folder
-
-	if GROUP_BY_TOPIC:
-		folder_path = os.path.join(folder_path, topic_name)
-	if GROUP_BY_RECORDING:
-		folder_path = os.path.join(folder_path, record_name)
-
-	os.makedirs(folder_path, exist_ok=True)
-	return os.path.join(folder_path, file_name)
-
 def download_recording(download_url, host_folder, file_name, file_size, topic_name, meeting_name):
 	if VERBOSE_OUTPUT:
 		print()
@@ -310,6 +289,17 @@ def download_recording(download_url, host_folder, file_name, file_size, topic_na
 
 	return True
 
+def create_path(host_folder, file_name, topic_name, record_name):
+	folder_path = host_folder
+
+	if GROUP_BY_TOPIC:
+		folder_path = os.path.join(folder_path, topic_name)
+	if GROUP_BY_RECORDING:
+		folder_path = os.path.join(folder_path, record_name)
+
+	os.makedirs(folder_path, exist_ok=True)
+	return os.path.join(folder_path, file_name)
+
 def wait_for_disk_space(file_size):
 	file_size_str = size_to_string(file_size)
 
@@ -327,15 +317,24 @@ def wait_for_disk_space(file_size):
 		free_disk = shutil.disk_usage(PATH)[2]
 		free_disk_str = size_to_string(free_disk)
 
+def size_to_string(size_bytes):
+   if size_bytes == 0:
+       return '0B'
+   units = ('B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB')
+   i = int(math.floor(math.log(size_bytes, 1024)))
+   p = 1024**i
+   size = round(size_bytes / p, 2)
+   return f'{size}{units[i]}'
+
 def do_with_token(do):
-	def do_wrapper(token):
+	def do_as_get(token):
 		test_response = requests.get('https://api.zoom.us/v2/users/me/recordings', headers=get_headers(token))
 		if test_response.ok:
 			do(token)
 
 		return test_response
 		
-	get_with_token(lambda t: do_wrapper(t))
+	get_with_token(lambda t: do_as_get(t))
 
 def download(url, output_path):
 	class DownloadProgressBar(tqdm):
@@ -375,3 +374,4 @@ if __name__ == '__main__':
 		print()
 		print(f'{Fore.RED + Style.BRIGHT}Interrupted by the user{Style.RESET_ALL}')
 		exit(1)
+
