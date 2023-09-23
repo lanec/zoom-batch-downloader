@@ -12,61 +12,61 @@ from tqdm import tqdm
 
 
 def add_url_params(url, params):
-    """ Add GET params to provided URL being aware of existing.
+	""" Add GET params to provided URL being aware of existing.
 
-    :param url: string of target URL
-    :param params: dict containing requested params to be added
-    :return: string with updated URL
-    
-    >> url = 'https://stackoverflow.com/test?answers=true'
-    >> new_params = {'answers': False, 'data': ['some','values']}
-    >> add_url_params(url, new_params)
-    'https://stackoverflow.com/test?data=some&data=values&answers=false'
-    """
-    # Unquoting URL first so we don't lose existing args
-    url = urllib.parse.unquote(url)
-    # Extracting url info
-    parsed_url = urllib.parse.urlparse(url)
-    # Extracting URL arguments from parsed URL
-    get_args = parsed_url.query
-    # Converting URL arguments to dict
-    parsed_get_args = dict(urllib.parse.parse_qsl(get_args))
-    # Merging URL arguments dict with new params
-    parsed_get_args.update(params)
+	:param url: string of target URL
+	:param params: dict containing requested params to be added
+	:return: string with updated URL
+	
+	>> url = 'https://stackoverflow.com/test?answers=true'
+	>> new_params = {'answers': False, 'data': ['some','values']}
+	>> add_url_params(url, new_params)
+	'https://stackoverflow.com/test?data=some&data=values&answers=false'
+	"""
+	# Unquoting URL first so we don't lose existing args
+	url = urllib.parse.unquote(url)
+	# Extracting url info
+	parsed_url = urllib.parse.urlparse(url)
+	# Extracting URL arguments from parsed URL
+	get_args = parsed_url.query
+	# Converting URL arguments to dict
+	parsed_get_args = dict(urllib.parse.parse_qsl(get_args))
+	# Merging URL arguments dict with new params
+	parsed_get_args.update(params)
 
-    # Bool and Dict values should be converted to json-friendly values
-    # you may throw this part away if you don't like it :)
-    parsed_get_args.update(
-        {k: dumps(v) for k, v in parsed_get_args.items()
-         if isinstance(v, (bool, dict))}
-    )
+	# Bool and Dict values should be converted to json-friendly values
+	# you may throw this part away if you don't like it :)
+	parsed_get_args.update(
+		{k: dumps(v) for k, v in parsed_get_args.items()
+		 if isinstance(v, (bool, dict))}
+	)
 
-    # Converting URL argument to proper query string
-    encoded_get_args = urllib.parse.urlencode(parsed_get_args, doseq=True)
-    # Creating new parsed result object based on provided with new
-    # URL arguments. Same thing happens inside urlparse.
-    new_url = urllib.parse.ParseResult(
-        parsed_url.scheme, parsed_url.netloc, parsed_url.path,
-        parsed_url.params, encoded_get_args, parsed_url.fragment
-    ).geturl()
+	# Converting URL argument to proper query string
+	encoded_get_args = urllib.parse.urlencode(parsed_get_args, doseq=True)
+	# Creating new parsed result object based on provided with new
+	# URL arguments. Same thing happens inside urlparse.
+	new_url = urllib.parse.ParseResult(
+		parsed_url.scheme, parsed_url.netloc, parsed_url.path,
+		parsed_url.params, encoded_get_args, parsed_url.fragment
+	).geturl()
 
-    return new_url
+	return new_url
 
 def slugify(value, allow_unicode=True):
-    """
-    Taken from https://github.com/django/django/blob/master/django/utils/text.py
-    Convert to ASCII if 'allow_unicode' is False. Convert spaces or repeated
-    dashes to single dashes. Remove characters that aren't alphanumerics,
-    underscores, or hyphens. Convert to lowercase. Also strip leading and
-    trailing whitespace, dashes, and underscores.
-    """
-    value = str(value)
-    if allow_unicode:
-        value = unicodedata.normalize('NFKC', value)
-    else:
-        value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore').decode('ascii')
-    value = re.sub(r'[^\w\s-]', '', value.lower())
-    return re.sub(r'[-\s]+', '-', value).strip('-_')
+	"""
+	Taken from https://github.com/django/django/blob/master/django/utils/text.py
+	Convert to ASCII if 'allow_unicode' is False. Convert spaces or repeated
+	dashes to single dashes. Remove characters that aren't alphanumerics,
+	underscores, or hyphens. Convert to lowercase. Also strip leading and
+	trailing whitespace, dashes, and underscores.
+	"""
+	value = str(value)
+	if allow_unicode:
+		value = unicodedata.normalize('NFKC', value)
+	else:
+		value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore').decode('ascii')
+	value = re.sub(r'[^\w\s-]', '', value.lower())
+	return re.sub(r'[-\s]+', '-', value).strip('-_')
 
 def wait_for_disk_space(file_size, path, minimum_free_disk, interval):
 	file_size_str = size_to_string(file_size)
@@ -88,22 +88,22 @@ def wait_for_disk_space(file_size, path, minimum_free_disk, interval):
 		free_disk = shutil.disk_usage(path)[2]
 
 def size_to_string(size_bytes):
-   if size_bytes == 0:
-       return '0B'
-   units = ('B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB')
-   i = int(math.floor(math.log(size_bytes, 1024)))
-   p = 1024**i
-   size = round(size_bytes / p, 2)
-   return str(size) + units[i]
+	if size_bytes == 0:
+		return '0B'
+	units = ('B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB')
+	i = int(math.floor(math.log(size_bytes, 1024)))
+	p = 1024**i
+	size = round(size_bytes / p, 2)
+	return str(size) + units[i]
 
 def print_bright_red(msg):
 	print_bright(Fore.RED + str(msg) + Fore.RESET)
 
 def print_bright(msg):
 	print(Style.BRIGHT + str(msg) + Style.RESET_ALL)
-     
+	 
 def print_dim(msg):
-    print(Style.DIM + str(msg) + Style.RESET_ALL)
+	print(Style.DIM + str(msg) + Style.RESET_ALL)
 
 def download_with_progress(url, output_path, expected_size):
 	class DownloadProgressBar(tqdm):
@@ -111,9 +111,13 @@ def download_with_progress(url, output_path, expected_size):
 			if tsize is not None:
 				self.total = tsize
 			self.update(b * bsize - self.n)
+			
+
+	r_bar = '| {n_fmt}{unit}/{total_fmt}{unit} [{elapsed}<{remaining}, {rate_fmt}{postfix}]'
+	format = '{l_bar}{bar}' + r_bar
 
 	with DownloadProgressBar(
-		unit='B', unit_divisor=1024, unit_scale=True, miniters=1, dynamic_ncols=True
+		unit='B', unit_divisor=1024, unit_scale=True, miniters=1, dynamic_ncols=True, bar_format=format
 	) as t:
 		try:
 			urllib.request.urlretrieve(url, filename=output_path, reporthook=t.update_to)
