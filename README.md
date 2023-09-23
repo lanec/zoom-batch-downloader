@@ -8,7 +8,7 @@ Required Scopes:
 - `recording:read:admin` to download the recordings.
 - `user:read:admin` if you want the script to iterate over all users in the account (default behavior).
   
-Instructions:
+## Instructions:
 
 1. Create a server-to-server app as specified above and activate it (no need to publish).
 
