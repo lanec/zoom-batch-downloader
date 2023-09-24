@@ -75,17 +75,20 @@ def wait_for_disk_space(file_size, path, minimum_free_disk, interval):
 	required_disk_space = file_size + minimum_free_disk
 	required_disk_space_str = size_to_string(required_disk_space)
 
+	i = 0
 	while free_disk < required_disk_space:
-		free_disk_str = size_to_string(free_disk)
-		minimum_free_disk_str = size_to_string(minimum_free_disk)
+		if i % 3 == 0:
+			free_disk_str = size_to_string(free_disk)
+			minimum_free_disk_str = size_to_string(minimum_free_disk)
 
-		print_bright_red(
-			f'Waiting for disk space... '
-			f'(File size: {file_size_str}, minimum free disk space: {minimum_free_disk_str}, '
-			f'available: {free_disk_str}/{required_disk_space_str})'
-		)
+			print_bright_red(
+				f'Waiting for disk space... '
+				f'(File size: {file_size_str}, minimum free disk space: {minimum_free_disk_str}, '
+				f'available: {free_disk_str}/{required_disk_space_str})'
+			)
 		sleep(interval)
 		free_disk = shutil.disk_usage(path)[2]
+		i += 1
 
 def size_to_string(size_bytes):
 	if size_bytes == 0:

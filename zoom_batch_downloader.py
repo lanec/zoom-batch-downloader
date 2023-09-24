@@ -180,7 +180,7 @@ def download_recording_file(download_url, host_folder, file_name, file_size, top
 		os.remove(file_path)
 
 	utils.print_bright(f'Downloading: {file_name}')
-	utils.wait_for_disk_space(file_size, CONFIG.OUTPUT_PATH, CONFIG.MINIMUM_FREE_DISK, interval=15)
+	utils.wait_for_disk_space(file_size, CONFIG.OUTPUT_PATH, CONFIG.MINIMUM_FREE_DISK, interval=5)
 
 	tmp_file_path = file_path + '.tmp'
 	do_with_token(
