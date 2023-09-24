@@ -8,6 +8,11 @@ USERS = [
 	# '####@####.####'
 ]
 
+# Put here the topics of the meetings you wish to download recordings for. If empty, no topic filtering will happen.
+TOPICS = [
+    # '############'
+]
+
 # Put your own download path here, I used an external hard drive so mine will differ from yours
 PATH = '/Volumes/Ext3/Zoom/'
 

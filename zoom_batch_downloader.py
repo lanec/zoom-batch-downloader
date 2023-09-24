@@ -11,6 +11,13 @@ import utils
 colorama.init()
 
 def main():
+	if CONFIG.TOPICS:
+		utils.print_bright(f'Topics filter is active {CONFIG.TOPICS}')
+	if CONFIG.USERS:
+		utils.print_bright(f'Users filter is active {CONFIG.USERS}')
+	if CONFIG.TOPICS or CONFIG.USERS:
+		print()
+
 	from_date = get_date_str(CONFIG.START_DAY or 1, CONFIG.START_MONTH, CONFIG.START_YEAR)
 	to_date = get_date_str(
 		CONFIG.END_DAY or monthrange(CONFIG.END_YEAR, CONFIG.END_MONTH)[1], CONFIG.END_MONTH, CONFIG.END_YEAR
@@ -136,6 +143,9 @@ def download_recordings_from_meetings(meetings, host_folder):
 	file_count, total_size, skipped_count = 0, 0, 0
 
 	for meeting in meetings:
+		if CONFIG.TOPICS and meeting['topic'] not in CONFIG.TOPICS and utils.slugify(meeting['topic']) not in CONFIG.TOPICS:
+			continue
+
 		for recording_file in meeting['recording_files']:
 			if recording_file['status'] != 'completed':
 				continue
@@ -208,7 +218,7 @@ def do_with_token(do):
 		return test_response
 		
 	get_with_token(lambda t: do_as_get(t))
-	   
+
 if __name__ == '__main__':
 	try:
 		try:
