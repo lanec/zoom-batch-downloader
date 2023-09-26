@@ -41,7 +41,10 @@ def get_users():
 		return [(email, '') for email in CONFIG.USERS]
 
 	return paginate_reduce(
-		'https://api.zoom.us/v2/users', [],
+		'https://api.zoom.us/v2/users?status=active', [],
+		lambda users, page: users + [(user['email'], get_user_name(user)) for user in page['users']]
+	) + paginate_reduce(
+		'https://api.zoom.us/v2/users?status=inactive', [],
 		lambda users, page: users + [(user['email'], get_user_name(user)) for user in page['users']]
 	)
 
@@ -146,6 +149,8 @@ def download_recordings_from_meetings(meetings, host_folder):
 		if CONFIG.TOPICS and meeting['topic'] not in CONFIG.TOPICS and utils.slugify(meeting['topic']) not in CONFIG.TOPICS:
 			continue
 
+		if 'recording_files' not in meeting:
+			continue
 		for recording_file in meeting['recording_files']:
 			if recording_file['status'] != 'completed':
 				continue
