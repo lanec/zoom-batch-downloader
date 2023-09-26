@@ -27,6 +27,7 @@ GROUP_BY_USER = True
 GROUP_BY_TOPIC = True
 
 # If true, each instance of recording will be in its own folder (which may contain multiple files).
+# Note: One "meeting" can have multiple recording instances.
 GROUP_BY_RECORDING = False
 
 # Set to true for more verbose output
