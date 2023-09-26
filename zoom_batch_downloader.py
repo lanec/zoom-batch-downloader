@@ -232,7 +232,7 @@ if __name__ == '__main__':
 			if error.obj.__name__ == 'config':
 				print()
 				utils.print_bright_red(
-					f'Missing variable {error.name} from config.py. '
+					f'Variable {error.name} is not defined in config.py. '
 					f'See config_template.py for the complete list of variables.'
 				)
 			else:

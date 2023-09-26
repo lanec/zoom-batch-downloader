@@ -14,7 +14,7 @@ TOPICS = [
 ]
 
 # Put your own download path here, I used an external hard drive so mine will differ from yours
-PATH = '/Volumes/Ext3/Zoom/'
+OUTPUT_PATH = '/Volumes/Ext3/Zoom/'
 
 # Date range (inclusive) for downloads, None value for Days gets replaced by first/last day of the month.
 START_DAY, START_MONTH, START_YEAR = None, 5, 2020
