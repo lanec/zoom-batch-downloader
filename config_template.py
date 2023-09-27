@@ -5,12 +5,14 @@ CLIENT_SECRET = '##########'
 
 # Put here emails of the users you want to check for recordings. If empty, all users under the account will be checked.
 USERS = [
-	# '####@####.####'
+	# '####@####.####',
+    # '####@####.####',
 ]
 
 # Put here the topics of the meetings you wish to download recordings for. If empty, no topic filtering will happen.
 TOPICS = [
-    # '############'
+    # '############',
+    # '############',
 ]
 
 # Put your own download path here, I used an external hard drive so mine will differ from yours
