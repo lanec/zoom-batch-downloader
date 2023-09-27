@@ -108,7 +108,7 @@ def print_bright(msg):
 def print_dim(msg):
 	print(Style.DIM + str(msg) + Style.RESET_ALL)
 
-def download_with_progress(url, output_path, expected_size):
+def download_with_progress(url, output_path, expected_size, verbose_output, size_tolerance):
 	class DownloadProgressBar(tqdm):
 		def update_to(self, b=1, bsize=1, tsize=None):
 			if tsize is not None:
@@ -125,9 +125,15 @@ def download_with_progress(url, output_path, expected_size):
 		try:
 			urllib.request.urlretrieve(url, filename=output_path, reporthook=t.update_to)
 			file_size = os.path.getsize(output_path)
-			if file_size != expected_size:
+			if abs(file_size - expected_size) > size_tolerance:
 				t.update_to(bsize=0, tsize=expected_size)
-				raise Exception(f'Failed to download file at {url}, expected size: {expected_size}, actual size: {file_size}')
+				if verbose_output:
+					print_dim(
+						f'{Fore.RED}Size mismatch: Expected {expected_size} bytes but got {file_size}. '
+			   			f'Size difference: {size_to_string(abs(file_size - expected_size))}.\n'
+						f'You might want to increase FILE_SIZE_MISMATCH_TOLERANCE in config.py{Fore.RESET}'
+					)
+				raise Exception(f'Failed to download file at {url}.{"" if verbose_output else " Enable verbose output for more details."}')
 			
 			t.update_to(bsize=expected_size, tsize=expected_size)
 		except:

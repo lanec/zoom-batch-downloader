@@ -69,9 +69,11 @@ def paginate_reduce(url, initial, reduce):
 
 def get_with_token(get):
 	cached_token = getattr(get_with_token, 'token', '')
-	response = get(cached_token)
+
+	if cached_token:
+		response = get(cached_token)
 	
-	if response.status_code == 401:
+	if not cached_token or response.status_code == 401:
 		get_with_token.token = fetch_token()
 		response = get(get_with_token.token)
 
@@ -151,16 +153,18 @@ def download_recordings_from_meetings(meetings, host_folder):
 
 		if 'recording_files' not in meeting:
 			continue
+		
 		for recording_file in meeting['recording_files']:
-			if recording_file['status'] != 'completed':
+			if 'file_size' not in recording_file:
 				continue
 
 			url = recording_file['download_url']
 			topic = utils.slugify(meeting['topic'])
 			ext = utils.slugify(recording_file['file_extension'])
 			recording_name = utils.slugify(f'{topic}__{recording_file["recording_start"]}')
-			file_name = utils.slugify(f'{recording_name}__{recording_file["recording_type"]}') + '.' + ext
-			file_size = int(recording_file['file_size'])
+			file_id = recording_file['id']
+			file_name = utils.slugify(f'{recording_name}__{recording_file["recording_type"]}__{file_id[-8:]}') + '.' + ext
+			file_size = int(recording_file.get('file_size'))
 
 			if download_recording_file(url, host_folder, file_name, file_size, topic, recording_name):
 				total_size += file_size
@@ -177,7 +181,7 @@ def download_recording_file(download_url, host_folder, file_name, file_size, top
 
 	file_path = create_path(host_folder, file_name, topic, recording_name)
 
-	if os.path.exists(file_path) and os.path.getsize(file_path) == file_size:
+	if os.path.exists(file_path) and abs(os.path.getsize(file_path) - file_size) <= CONFIG.ILE_SIZE_MISMATCH_TOLERANCE:
 		utils.print_dim(f'Skipping existing file: {file_name}')
 		return False
 	elif os.path.exists(file_path):
@@ -189,7 +193,10 @@ def download_recording_file(download_url, host_folder, file_name, file_size, top
 
 	tmp_file_path = file_path + '.tmp'
 	do_with_token(
-		lambda t: utils.download_with_progress(f'{download_url}?access_token={t}', tmp_file_path, file_size)
+		lambda t: utils.download_with_progress(
+			f'{download_url}?access_token={t}', tmp_file_path, file_size, CONFIG.VERBOSE_OUTPUT,
+			CONFIG.FILE_SIZE_MISMATCH_TOLERANCE
+		)
 	)
 	
 	os.rename(tmp_file_path, file_path)
