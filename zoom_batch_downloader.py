@@ -181,7 +181,7 @@ def download_recording_file(download_url, host_folder, file_name, file_size, top
 
 	file_path = create_path(host_folder, file_name, topic, recording_name)
 
-	if os.path.exists(file_path) and abs(os.path.getsize(file_path) - file_size) <= CONFIG.ILE_SIZE_MISMATCH_TOLERANCE:
+	if os.path.exists(file_path) and abs(os.path.getsize(file_path) - file_size) <= CONFIG.FILE_SIZE_MISMATCH_TOLERANCE:
 		utils.print_dim(f'Skipping existing file: {file_name}')
 		return False
 	elif os.path.exists(file_path):
