@@ -124,9 +124,10 @@ def download_with_progress(url, output_path, expected_size):
 	) as t:
 		try:
 			urllib.request.urlretrieve(url, filename=output_path, reporthook=t.update_to)
-			if os.path.getsize(output_path) != expected_size:
+			file_size = os.path.getsize(output_path)
+			if file_size != expected_size:
 				t.update_to(bsize=0, tsize=expected_size)
-				raise Exception(f'Failed to download file at {url}')
+				raise Exception(f'Failed to download file at {url}, expected size: {expected_size}, actual size: {file_size}')
 			
 			t.update_to(bsize=expected_size, tsize=expected_size)
 		except:
