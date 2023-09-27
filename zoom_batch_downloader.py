@@ -116,7 +116,7 @@ def download_recordings(users, from_date_str, to_date_str):
 		user_host_folder = get_user_host_folder(user_email)
 
 		utils.print_bright(
-			f'Downloading videos from user {user_description} - Starting at {from_date_str} and up to {to_date_str} (inclusive).'
+			f'Downloading recordings from user {user_description} - Starting at {from_date_str} and up to {to_date_str} (inclusive).'
 		)
 	
 		meetings = get_meetings(user_email, from_date_str, to_date_str)
