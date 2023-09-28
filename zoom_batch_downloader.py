@@ -161,6 +161,8 @@ def get_meetings(user_email, from_date, to_date):
 		new_date = min(to_date, date + delta)
 
 		url = f'https://api.zoom.us/v2/users/{user_email}/recordings?from={date_to_str(date)}&to={date_to_str(new_date)}'
+		if CONFIG.INCLUDE_TRASH:
+			url += '&trash=true&trash_type=recording_file'
 		meetings += paginate_reduce(url, [], lambda meetings, page: meetings + page['meetings'])[::-1]
 
 		date = new_date

@@ -32,17 +32,20 @@ RECORDING_FILE_TYPES = [
     # R"SUMMARY",        # Summary file of the recording in JSON file format.
 ]
 
-# If true, recordings will be grouped in folders by their owning user.
+# If True, will include recordings in the trash, you weirdo.
+INCLUDE_TRASH = False
+
+# If True, recordings will be grouped in folders by their owning user.
 GROUP_BY_USER = True
 
-# If true, recordings will be grouped in folders by their topics
+# If True, recordings will be grouped in folders by their topics
 GROUP_BY_TOPIC = True
 
-# If true, each instance of recording will be in its own folder (which may contain multiple files).
+# If True, each instance of recording will be in its own folder (which may contain multiple files).
 # Note: One "meeting" can have multiple recording instances.
 GROUP_BY_RECORDING = False
 
-# Set to true for more verbose output
+# Set to True for more verbose output
 VERBOSE_OUTPUT = False
 
 # Constants used for indicating size in bytes.
