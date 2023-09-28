@@ -104,7 +104,10 @@ def print_bright_red(msg):
 
 def print_bright(msg):
 	print(Style.BRIGHT + str(msg) + Style.RESET_ALL)
-	 
+
+def print_dim_red(msg):
+	print_dim(Fore.RED + str(msg) + Fore.RESET)	
+
 def print_dim(msg):
 	print(Style.DIM + str(msg) + Style.RESET_ALL)
 
@@ -128,14 +131,20 @@ def download_with_progress(url, output_path, expected_size, verbose_output, size
 			if abs(file_size - expected_size) > size_tolerance:
 				t.update_to(bsize=0, tsize=expected_size)
 				if verbose_output:
-					print_dim(
-						f'{Fore.RED}Size mismatch: Expected {expected_size} bytes but got {file_size}. '
+					print_dim_red(
+						f'Size mismatch: Expected {expected_size} bytes but got {file_size}. '
 			   			f'Size difference: {size_to_string(abs(file_size - expected_size))}.\n'
-						f'You might want to increase FILE_SIZE_MISMATCH_TOLERANCE in config.py{Fore.RESET}'
+						f'You might want to increase FILE_SIZE_MISMATCH_TOLERANCE in config.py'
 					)
 				raise Exception(f'Failed to download file at {url}.{"" if verbose_output else " Enable verbose output for more details."}')
 			
-			t.update_to(bsize=expected_size, tsize=expected_size)
+			t.update_to(bsize=file_size, tsize=file_size)
+
+			if file_size != expected_size and verbose_output:
+				print_dim_red(
+					f'Size mismatch within tolerance: Expected {expected_size} bytes but got {file_size}. '
+					f'Size difference: {size_to_string(abs(file_size - expected_size))}.'
+				)
 		except:
 			try:
 				os.remove(output_path)

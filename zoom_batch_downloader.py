@@ -199,7 +199,7 @@ def download_recording_file(download_url, host_folder, file_name, file_size, top
 		utils.print_dim(f'Skipping existing file: {file_name}')
 		return False
 	elif os.path.exists(file_path):
-		utils.print_dim(f'{Fore.RED}Deleting corrupt file: {file_name}{Fore.RESET}')
+		utils.print_dim_red(f'Deleting corrupt file: {file_name}')
 		os.remove(file_path)
 
 	utils.print_bright(f'Downloading: {file_name}')
