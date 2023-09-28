@@ -166,7 +166,6 @@ def get_meetings(user_email, from_date, to_date):
 		date = new_date
 
 	return meetings
-	
 
 def download_recordings_from_meetings(meetings, host_folder):
 	file_count, total_size, skipped_count = 0, 0, 0
@@ -260,29 +259,24 @@ def do_with_token(do):
 
 if __name__ == '__main__':
 	try:
-		try:
-			import config as CONFIG
-		except ImportError:
-			utils.print_bright_red('Missing config file, copy config_template.py to config.py and change as needed.')
+		import config as CONFIG
+	except ImportError:
+		utils.print_bright_red('Missing config file, copy config_template.py to config.py and change as needed.')
 
-		try:
-			main()
-		except AttributeError as error:
-			if error.obj.__name__ == 'config':
-				print()
-				utils.print_bright_red(
-					f'Variable {error.name} is not defined in config.py. '
-					f'See config_template.py for the complete list of variables.'
-				)
-			else:
-				raise
-		except Exception as error:
+	try:
+		main()
+	except AttributeError as error:
+		if error.obj.__name__ == 'config':
 			print()
-			utils.print_bright_red(f'Error: {error}')
-		
+			utils.print_bright_red(
+				f'Variable {error.name} is not defined in config.py. '
+				f'See config_template.py for the complete list of variables.'
+			)
+		else:
+			raise
+	except Exception as error:
 		print()
-		input('Press Enter to exit...')
-
+		utils.print_bright_red(f'Error: {error}')
 	except KeyboardInterrupt:
 		print()
 		utils.print_bright_red('Interrupted by the user')
