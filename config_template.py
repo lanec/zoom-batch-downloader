@@ -3,6 +3,13 @@ ACCOUNT_ID = '##########'
 CLIENT_ID = '##########'
 CLIENT_SECRET = '##########'
 
+# Put your own download path here, I used an external hard drive so mine will differ from yours
+OUTPUT_PATH = '/Volumes/Ext3/Zoom/'
+
+# Date range (inclusive) for downloads, None value for Days gets replaced by first/last day of the month.
+START_DAY, START_MONTH, START_YEAR = None, 5, 2020
+END_DAY, END_MONTH, END_YEAR = None , 3, 2022
+
 # Put here emails of the users you want to check for recordings. If empty, all users under the account will be checked.
 USERS = [
 	# '####@####.####',
@@ -15,12 +22,15 @@ TOPICS = [
     # '############',
 ]
 
-# Put your own download path here, I used an external hard drive so mine will differ from yours
-OUTPUT_PATH = '/Volumes/Ext3/Zoom/'
-
-# Date range (inclusive) for downloads, None value for Days gets replaced by first/last day of the month.
-START_DAY, START_MONTH, START_YEAR = None, 5, 2020
-END_DAY, END_MONTH, END_YEAR = None , 3, 2022
+# Put here the file types you wish to download. If empty, no file type filtering will happen.
+RECORDING_FILE_TYPES = [
+    # 'MP4',            # Video file of the recording.
+    # 'M4A',            # Audio-only file of the recording.
+    # 'TRANSCRIPT',     # Transcription file of the recording in VTT format.
+    # 'CHAT',           # A TXT file containing in-meeting chat messages that were sent during the meeting.
+    # 'CSV',            # File containing polling data in CSV format.
+    # 'SUMMARY',        # Summary file of the recording in JSON file format.
+]
 
 # If true, recordings will be grouped in folders by their owning user.
 GROUP_BY_USER = True

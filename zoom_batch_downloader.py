@@ -11,12 +11,7 @@ import utils
 colorama.init()
 
 def main():
-	if CONFIG.TOPICS:
-		utils.print_bright(f'Topics filter is active {CONFIG.TOPICS}')
-	if CONFIG.USERS:
-		utils.print_bright(f'Users filter is active {CONFIG.USERS}')
-	if CONFIG.TOPICS or CONFIG.USERS:
-		print()
+	print_filter_warning()
 
 	from_date = get_date_str(CONFIG.START_DAY or 1, CONFIG.START_MONTH, CONFIG.START_YEAR)
 	to_date = get_date_str(
@@ -32,6 +27,22 @@ def main():
 		f'Total size: {Fore.GREEN}{total_size_str}{Fore.RESET}.{Style.RESET_ALL}',
 		f'Skipped: {skipped_count} files.'
 	)
+
+def print_filter_warning():
+	did_print = False
+
+	if CONFIG.TOPICS:
+		utils.print_bright(f'Topics filter is active {CONFIG.TOPICS}')
+		did_print = True
+	if CONFIG.USERS:
+		utils.print_bright(f'Users filter is active {CONFIG.USERS}')
+		did_print = True
+	if CONFIG.RECORDING_FILE_TYPES:
+		utils.print_bright(f'Recording file types filter is active {CONFIG.RECORDING_FILE_TYPES}')
+		did_print = True
+		
+	if did_print:
+		print()
 
 def get_date_str(day, month, year):
 	return datetime.datetime(year, month, day).strftime('%Y-%m-%d')
@@ -156,6 +167,9 @@ def download_recordings_from_meetings(meetings, host_folder):
 		
 		for recording_file in meeting['recording_files']:
 			if 'file_size' not in recording_file:
+				continue
+
+			if CONFIG.RECORDING_FILE_TYPES and recording_file['file_type'] not in CONFIG.RECORDING_FILE_TYPES:
 				continue
 
 			url = recording_file['download_url']
