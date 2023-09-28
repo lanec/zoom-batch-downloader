@@ -13,9 +13,9 @@ colorama.init()
 def main():
 	print_filter_warning()
 
-	from_date = get_date_str(CONFIG.START_DAY or 1, CONFIG.START_MONTH, CONFIG.START_YEAR)
-	to_date = get_date_str(
-		CONFIG.END_DAY or monthrange(CONFIG.END_YEAR, CONFIG.END_MONTH)[1], CONFIG.END_MONTH, CONFIG.END_YEAR
+	from_date = datetime.datetime(CONFIG.START_YEAR, CONFIG.START_MONTH, CONFIG.START_DAY or 1)
+	to_date = datetime.datetime(
+		CONFIG.END_YEAR, CONFIG.END_MONTH, CONFIG.END_DAY or monthrange(CONFIG.END_YEAR, CONFIG.END_MONTH)[1],
 	)
 
 	file_count, total_size, skipped_count = download_recordings(get_users(), from_date, to_date)
@@ -43,9 +43,6 @@ def print_filter_warning():
 		
 	if did_print:
 		print()
-
-def get_date_str(day, month, year):
-	return datetime.datetime(year, month, day).strftime('%Y-%m-%d')
 
 def get_users():
 	if CONFIG.USERS:
@@ -119,7 +116,7 @@ def get_user_name(user_data):
 	else:
 		return first_name or last_name
 	
-def download_recordings(users, from_date_str, to_date_str):
+def download_recordings(users, from_date, to_date):
 	file_count, total_size, skipped_count = 0, 0, 0
 
 	for user_email, user_name in users:
@@ -127,10 +124,11 @@ def download_recordings(users, from_date_str, to_date_str):
 		user_host_folder = get_user_host_folder(user_email)
 
 		utils.print_bright(
-			f'Downloading recordings from user {user_description} - Starting at {from_date_str} and up to {to_date_str} (inclusive).'
+			f'Downloading recordings from user {user_description} - Starting at {date_to_str(from_date)} '
+			f'and up to {date_to_str(to_date)} (inclusive).'
 		)
 	
-		meetings = get_meetings(user_email, from_date_str, to_date_str)
+		meetings = get_meetings(user_email, from_date, to_date)
 		user_file_count, user_total_size, user_skipped_count = download_recordings_from_meetings(meetings, user_host_folder)
 
 		utils.print_bright('######################################################################')
@@ -150,10 +148,25 @@ def get_user_host_folder(user_email):
 		return os.path.join(CONFIG.OUTPUT_PATH, user_email)
 	else:
 		return CONFIG.OUTPUT_PATH
+	
+def date_to_str(date):
+	return date.strftime('%Y-%m-%d')
 
-def get_meetings(user_email, from_date_str, to_date_str):
-	url = f'https://api.zoom.us/v2/users/{user_email}/recordings?from={from_date_str}&to={to_date_str}'
-	return paginate_reduce(url, [], lambda meetings, page: meetings + page['meetings'])
+def get_meetings(user_email, from_date, to_date):
+	meetings = []
+
+	date = from_date
+	delta = datetime.timedelta(days=29)
+	while date < to_date:
+		new_date = min(to_date, date + delta)
+
+		url = f'https://api.zoom.us/v2/users/{user_email}/recordings?from={date_to_str(date)}&to={date_to_str(new_date)}'
+		meetings += paginate_reduce(url, [], lambda meetings, page: meetings + page['meetings'])[::-1]
+
+		date = new_date
+
+	return meetings
+	
 
 def download_recordings_from_meetings(meetings, host_folder):
 	file_count, total_size, skipped_count = 0, 0, 0
