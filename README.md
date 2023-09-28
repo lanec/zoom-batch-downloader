@@ -1,8 +1,8 @@
 # zoom-batch-downloader
 
-Download all your zoom cloud recordings.
+Download all your Zoom cloud recordings for accounts with [paid plans](https://zoom.us/pricing#personal).
 
-This script requires [server-to-server app](https://developers.zoom.us/docs/internal-apps/create/) credentials from the [Zoom marketplace](https://marketplace.zoom.us/user/build) 
+This script requires [server-to-server app](https://developers.zoom.us/docs/internal-apps/create/) credentials from the [Zoom marketplace](https://marketplace.zoom.us/user/build)
 
 Required Scopes for your server-to-server zoom app:
 - `recording:read:admin` to download the recordings.
