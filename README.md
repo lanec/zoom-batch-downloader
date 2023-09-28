@@ -14,21 +14,21 @@ Required Scopes for your server-to-server zoom app:
 
 1. Clone/[Download](https://github.com/lanec/zoom-batch-downloader/archive/refs/heads/master.zip) this repository.
 
-1. Copy config_template.py to a new file called config.py and edit it to include your credentials and the correct path for your downloads.
+1. Copy `config_template.py` to a new file called `config.py` and edit it to include your credentials and the correct path for your downloads.
 
-1. Go over config.py to see if you wish to change any other settings (optional).
+1. Go over `config.py` to see if you wish to change any other settings (optional).
 
 1. Install [Python](https://wiki.python.org/moin/BeginnersGuide/Download).
 
-1. Install the requirements listed in requirements.txt using [pip](https://pip.pypa.io/en/stable/reference/requirement-specifiers/).
+1. Install the requirements listed in `requirements.txt` using [pip](https://pip.pypa.io/en/stable/reference/requirement-specifiers/).
 
-    ```
+    ```bash
     pip install -r requirements.txt
     ```
 
-1. Run zoom_batch_downloader.py.
+1. Run `zoom_batch_downloader.py`.
 
-    ```
+    ```bash
     python zoom_batch_downloader.py
     ```
 
