@@ -139,6 +139,7 @@ def download_with_progress(url, output_path, expected_size, verbose_output, size
 				raise Exception(f'Failed to download file at {url}.{"" if verbose_output else " Enable verbose output for more details."}')
 			
 			t.update_to(bsize=file_size, tsize=file_size)
+			t.close()
 
 			if file_size != expected_size and verbose_output:
 				print_dim_red(
