@@ -90,14 +90,14 @@ def wait_for_disk_space(file_size, path, minimum_free_disk, interval):
 		free_disk = shutil.disk_usage(path)[2]
 		i += 1
 
-def size_to_string(size_bytes):
+def size_to_string(size_bytes, separator = ''):
 	if size_bytes == 0:
 		return '0B'
 	units = ('B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB')
 	i = int(math.floor(math.log(size_bytes, 1024)))
 	p = 1024**i
 	size = round(size_bytes / p, 2)
-	return str(size) + units[i]
+	return str(size) + str(separator) + units[i]
 
 def print_bright_red(msg):
 	print_bright(Fore.RED + str(msg) + Fore.RESET)
