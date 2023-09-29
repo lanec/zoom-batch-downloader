@@ -32,9 +32,6 @@ RECORDING_FILE_TYPES = [
     # R"SUMMARY",        # Summary file of the recording in JSON file format.
 ]
 
-# If True, will include recordings in the trash, you weirdo.
-INCLUDE_TRASH = False
-
 # If True, recordings will be grouped in folders by their owning user.
 GROUP_BY_USER = True
 
