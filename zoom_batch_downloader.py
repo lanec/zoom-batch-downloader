@@ -1,5 +1,6 @@
 import datetime
 import os
+import traceback
 from calendar import monthrange
 
 import colorama
@@ -276,7 +277,11 @@ if __name__ == '__main__':
 			raise
 	except Exception as error:
 		print()
-		utils.print_bright_red(f'Error: {error}')
+		if not getattr(CONFIG, "VERBOSE_OUTPUT"):
+			utils.print_bright_red(f'Error: {error}')
+		else:
+			utils.print_dim_red(traceback.format_exc())
+
 	except KeyboardInterrupt:
 		print()
 		utils.print_bright_red('Interrupted by the user')
