@@ -12,6 +12,8 @@ import utils
 colorama.init()
 
 def main():
+	CONFIG.OUTPUT_PATH = utils.prepend_path_on_windows(CONFIG.OUTPUT_PATH)
+
 	print_filter_warning()
 
 	from_date = datetime.datetime(CONFIG.START_YEAR, CONFIG.START_MONTH, CONFIG.START_DAY or 1)

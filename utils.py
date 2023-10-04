@@ -10,6 +10,18 @@ from time import sleep
 from colorama import Fore, Style
 from tqdm import tqdm
 
+def prepend_path_on_windows(path):
+	if os.name != 'nt':
+		return path
+	
+	path = os.path.abspath(path)
+
+	if path.startswith(u"\\\\"):
+		path=u"\\\\?\\UNC\\"+path[2:]
+	else:
+		path=u"\\\\?\\"+path
+
+	return path
 
 def add_url_params(url, params):
 	""" Add GET params to provided URL being aware of existing.
