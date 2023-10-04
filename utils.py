@@ -16,10 +16,13 @@ def prepend_path_on_windows(path):
 	
 	path = os.path.abspath(path)
 
+	if path.startswith(u"\\\\?\\"):
+		return path
+
 	if path.startswith(u"\\\\"):
-		path=u"\\\\?\\UNC\\"+path[2:]
+		path=u"\\\\?\\UNC\\" + path[2:]
 	else:
-		path=u"\\\\?\\"+path
+		path=u"\\\\?\\" + path
 
 	return path
 
