@@ -153,18 +153,23 @@ def get_user_host_folder(user_email):
 def date_to_str(date):
 	return date.strftime('%Y-%m-%d')
 
-def get_meetings(user_email, from_date, to_date):
+def get_meetings(user_email, start_date, end_date):
 	meetings = []
 
-	date = from_date
+	local_start_date = start_date
 	delta = datetime.timedelta(days=29)
-	while date < to_date:
-		new_date = min(to_date, date + delta)
+	while local_start_date <= end_date:
+		local_end_date = min(local_start_date + delta, end_date)
 
-		url = f'https://api.zoom.us/v2/users/{user_email}/recordings?from={date_to_str(date)}&to={date_to_str(new_date)}'
+		local_start_date_str = date_to_str(local_start_date)
+		local_end_date_str = date_to_str(local_end_date)
+		if CONFIG.VERBOSE_OUTPUT:
+			utils.print_dim(f'Searching for recordings between {local_start_date_str} and {local_end_date_str}')
+
+		url = f'https://api.zoom.us/v2/users/{user_email}/recordings?from={local_start_date_str}&to={local_end_date_str}'
 		meetings += paginate_reduce(url, [], lambda meetings, page: meetings + page['meetings'])[::-1]
 
-		date = new_date
+		local_start_date = local_end_date + datetime.timedelta(days=1)
 
 	return meetings
 
@@ -204,7 +209,7 @@ def download_recordings_from_meetings(meetings, host_folder):
 def download_recording_file(download_url, host_folder, file_name, file_size, topic, recording_name):
 	if CONFIG.VERBOSE_OUTPUT:
 		print()
-		utils.print_dim(f'Found: {download_url}')
+		utils.print_dim(f'URL: {download_url}')
 
 	file_path = create_path(host_folder, file_name, topic, recording_name)
 
