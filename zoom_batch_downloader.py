@@ -8,8 +8,6 @@ import requests
 from colorama import Fore, Style
 
 import utils
-import urllib.parse
-import json
 
 colorama.init()
 
@@ -177,29 +175,10 @@ def get_meetings(user_email, start_date, end_date):
 
 	return meetings
 
-import urllib.parse
-
-def get_meeting(meetingId):
-    # Check if the meetingId starts with / or //
-    if meetingId.startswith('/') or meetingId.startswith('//'):
-        # First encoding
-        encoded_once = urllib.parse.quote(meetingId, safe='')
-        # Second encoding
-        meetingId = urllib.parse.quote(encoded_once, safe='')
-
-    url = f'https://api.zoom.us/v2/meetings/{meetingId}/recordings'
-    response = get_with_token(lambda t: requests.get(url, headers=get_headers(t))).json()
-
-    if response:
-        return response
-    else:
-        raise Exception(f'No meeting found with id: {meetingId}')
-
 def download_recordings_from_meetings(meetings, host_folder):
 	file_count, total_size, skipped_count = 0, 0, 0
 
 	for meeting in meetings:
-
 		if CONFIG.TOPICS and meeting['topic'] not in CONFIG.TOPICS and utils.slugify(meeting['topic']) not in CONFIG.TOPICS:
 			continue
 
@@ -207,7 +186,6 @@ def download_recordings_from_meetings(meetings, host_folder):
 			continue
 		
 		for recording_file in meeting['recording_files']:
-
 			if 'file_size' not in recording_file:
 				continue
 
@@ -227,44 +205,6 @@ def download_recordings_from_meetings(meetings, host_folder):
 				file_count += 1
 			else:
 				skipped_count += 1
-		if CONFIG.IGNORE_PARTICIPANT_AUDIO:
-			continue
-		else:
-			pa_file_count, pa_total_size, pa_skipped_count  = download_participant_audio_files_from_meeting(meeting['uuid'], host_folder)
-			file_count += pa_file_count
-			total_size += pa_total_size
-			skipped_count += pa_skipped_count
-
-	return file_count, total_size, skipped_count
-
-def download_participant_audio_files_from_meeting(meetingId, host_folder):
-	file_count, total_size, skipped_count = 0, 0, 0
-
-	meeting = get_meeting(meetingId)
-
-	if 'participant_audio_files' not in meeting:
-		return file_count, total_size, skipped_count
-	
-	for participant_audio_file in meeting['participant_audio_files']:
-		if 'file_size' not in participant_audio_file:
-			continue
-
-		if CONFIG.PARTICIPANT_AUDIO_FILE_TYPES and participant_audio_file['file_type'] not in CONFIG.PARTICIPANT_AUDIO_FILE_TYPES:
-			continue
-
-		url = participant_audio_file['download_url']
-		topic = utils.slugify(meeting['topic'])
-		ext = utils.slugify(participant_audio_file['file_extension'])
-		recording_name = utils.slugify(f'{topic}__{participant_audio_file["recording_start"]}')
-		file_id = participant_audio_file['id']
-		file_name = utils.slugify(f'{recording_name}__{participant_audio_file["file_name"]}__{file_id[-8:]}') + '.' + ext
-		file_size = int(participant_audio_file.get('file_size'))
-
-		if download_recording_file(url, host_folder, file_name, file_size, topic, recording_name):
-			total_size += file_size
-			file_count += 1
-		else:
-			skipped_count += 1
 	
 	return file_count, total_size, skipped_count
 

@@ -32,19 +32,6 @@ RECORDING_FILE_TYPES = [
     # R"SUMMARY",        # Summary file of the recording in JSON file format.
 ]
 
-# Put here the file types you wish to download. If empty, no file type filtering will happen.
-PARTICIPANT_AUDIO_FILE_TYPES = [
-    # R"MP4",            # Video file of the recording.
-    # R"M4A",            # Audio-only file of the recording.
-    # R"TRANSCRIPT",     # Transcription file of the recording in VTT format.
-    # R"CHAT",           # A TXT file containing in-meeting chat messages that were sent during the meeting.
-    # R"CSV",            # File containing polling data in CSV format.
-    # R"SUMMARY",        # Summary file of the recording in JSON file format.
-] 
-
-# If True, recordings will not downloaded.
-IGNORE_PARTICIPANT_AUDIO = False
-
 # If True, recordings will be grouped in folders by their owning user.
 GROUP_BY_USER = True
 
