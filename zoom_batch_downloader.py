@@ -7,7 +7,6 @@ from calendar import monthrange
 import colorama
 import requests
 from colorama import Fore, Style
-from tqdm import tqdm
 
 import utils
 
@@ -163,9 +162,9 @@ def get_meeting_uuids(user_email, start_date, end_date):
 	local_start_date = start_date
 	delta = datetime.timedelta(days=29)
 	
-	utils.print_bright('Collecting meetings')
+	utils.print_bright('Scanning for meetings:')
 	estimated_iterations = math.ceil((end_date-start_date) / delta)
-	with tqdm(total=estimated_iterations) as progress_bar:
+	with utils.percentage_tqdm(total=estimated_iterations) as progress_bar:
 		while local_start_date <= end_date:
 			local_end_date = min(local_start_date + delta, end_date)
 
@@ -185,8 +184,8 @@ def get_meeting_uuids(user_email, start_date, end_date):
 
 def get_meetings(meeting_uuids):
 	meetings = []
-	utils.print_bright(f'Collecting recordings from {len(meeting_uuids)} meetings:')
-	for meeting_uuid in tqdm(meeting_uuids):
+	utils.print_bright(f'Scanning for recordings:')
+	for meeting_uuid in utils.percentage_tqdm(meeting_uuids):
 		url = f'https://api.zoom.us/v2/meetings/{utils.double_encode(meeting_uuid)}/recordings'
 		meetings.append(get_with_token(lambda t: requests.get(url=url, headers=get_headers(t))).json())
 

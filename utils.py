@@ -176,3 +176,9 @@ def download_with_progress(url, output_path, expected_size, verbose_output, size
 def is_debug() -> bool:
     """Return if the debugger is currently active"""
     return hasattr(sys, 'gettrace') and sys.gettrace() is not None
+
+class percentage_tqdm(tqdm):
+	def __init__(self, iterable=None, total=None):
+		tqdm.__init__(
+			self, iterable=iterable, total=total, bar_format='{l_bar}{bar}| [{elapsed}<{remaining}]', dynamic_ncols=True
+		)
