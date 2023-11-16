@@ -68,6 +68,9 @@ def add_url_params(url, params):
 
 	return new_url
 
+def double_encode(str):
+	return urllib.parse.quote(urllib.parse.quote(str, safe=''))
+
 def slugify(value, allow_unicode=True):
 	"""
 	Taken from https://github.com/django/django/blob/master/django/utils/text.py

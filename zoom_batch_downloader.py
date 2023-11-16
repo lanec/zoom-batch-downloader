@@ -131,7 +131,7 @@ def download_recordings(users, from_date, to_date):
 			f'and up to {date_to_str(to_date)} (inclusive).'
 		)
 	
-		meetings = get_meetings(user_email, from_date, to_date)
+		meetings = get_meetings(get_meeting_uuids(user_email, from_date, to_date))
 		user_file_count, user_total_size, user_skipped_count = download_recordings_from_meetings(meetings, user_host_folder)
 
 		utils.print_bright('######################################################################')
@@ -155,8 +155,8 @@ def get_user_host_folder(user_email):
 def date_to_str(date):
 	return date.strftime('%Y-%m-%d')
 
-def get_meetings(user_email, start_date, end_date):
-	meetings = []
+def get_meeting_uuids(user_email, start_date, end_date):
+	meeting_uuids = []
 
 	local_start_date = start_date
 	delta = datetime.timedelta(days=29)
@@ -169,9 +169,20 @@ def get_meetings(user_email, start_date, end_date):
 			utils.print_dim(f'Searching for recordings between {local_start_date_str} and {local_end_date_str}')
 
 		url = f'https://api.zoom.us/v2/users/{user_email}/recordings?from={local_start_date_str}&to={local_end_date_str}'
-		meetings += paginate_reduce(url, [], lambda meetings, page: meetings + page['meetings'])[::-1]
+		meeting_uuids += paginate_reduce(
+			url, [],
+			lambda ids, page: ids + list(map(lambda meeting: meeting['uuid'], page['meetings']))
+		)[::-1]
 
 		local_start_date = local_end_date + datetime.timedelta(days=1)
+
+	return meeting_uuids
+
+def get_meetings(meeting_uuids):
+	meetings = []
+	for meeting_uuid in meeting_uuids:
+		url = f'https://api.zoom.us/v2/meetings/{utils.double_encode(meeting_uuid)}/recordings'
+		meetings.append(get_with_token(lambda t: requests.get(url=url, headers=get_headers(t))).json())
 
 	return meetings
 
@@ -181,11 +192,11 @@ def download_recordings_from_meetings(meetings, host_folder):
 	for meeting in meetings:
 		if CONFIG.TOPICS and meeting['topic'] not in CONFIG.TOPICS and utils.slugify(meeting['topic']) not in CONFIG.TOPICS:
 			continue
-
-		if 'recording_files' not in meeting:
-			continue
 		
-		for recording_file in meeting['recording_files']:
+		recording_files = meeting.get('recording_files') or []
+		participant_audio_files = meeting.get('participant_audio_files') or [] if CONFIG.INCLUDE_PARTICIPANT_AUDIO else []
+
+		for recording_file in recording_files + participant_audio_files:
 			if 'file_size' not in recording_file:
 				continue
 
@@ -194,7 +205,7 @@ def download_recordings_from_meetings(meetings, host_folder):
 
 			url = recording_file['download_url']
 			topic = utils.slugify(meeting['topic'])
-			ext = utils.slugify(recording_file['file_extension'])
+			ext = recording_file.get('file_extension') or os.path.splitext(recording_file['file_name'])
 			recording_name = utils.slugify(f'{topic}__{recording_file["recording_start"]}')
 			file_id = recording_file['id']
 			file_name = utils.slugify(f'{recording_name}__{recording_file["recording_type"]}__{file_id[-8:]}') + '.' + ext

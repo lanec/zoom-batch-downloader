@@ -42,6 +42,10 @@ GROUP_BY_TOPIC = True
 # Note: One "meeting" can have multiple recording instances.
 GROUP_BY_RECORDING = False
 
+# If True, participant audio files will be downloaded as well. This works when "Record a separate audio file of each participant"
+# is enabled.
+INCLUDE_PARTICIPANT_AUDIO = True
+
 # Set to True for more verbose output
 VERBOSE_OUTPUT = False
 
