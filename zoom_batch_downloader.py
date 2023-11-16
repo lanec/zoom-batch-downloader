@@ -1,4 +1,5 @@
 import datetime
+import math
 import os
 import traceback
 from calendar import monthrange
@@ -6,6 +7,7 @@ from calendar import monthrange
 import colorama
 import requests
 from colorama import Fore, Style
+from tqdm import tqdm
 
 import utils
 
@@ -160,27 +162,31 @@ def get_meeting_uuids(user_email, start_date, end_date):
 
 	local_start_date = start_date
 	delta = datetime.timedelta(days=29)
-	while local_start_date <= end_date:
-		local_end_date = min(local_start_date + delta, end_date)
+	
+	utils.print_bright('Collecting meetings')
+	estimated_iterations = math.ceil((end_date-start_date) / delta)
+	with tqdm(total=estimated_iterations) as progress_bar:
+		while local_start_date <= end_date:
+			local_end_date = min(local_start_date + delta, end_date)
 
-		local_start_date_str = date_to_str(local_start_date)
-		local_end_date_str = date_to_str(local_end_date)
-		if CONFIG.VERBOSE_OUTPUT:
-			utils.print_dim(f'Searching for recordings between {local_start_date_str} and {local_end_date_str}')
+			local_start_date_str = date_to_str(local_start_date)
+			local_end_date_str = date_to_str(local_end_date)
 
-		url = f'https://api.zoom.us/v2/users/{user_email}/recordings?from={local_start_date_str}&to={local_end_date_str}'
-		meeting_uuids += paginate_reduce(
-			url, [],
-			lambda ids, page: ids + list(map(lambda meeting: meeting['uuid'], page['meetings']))
-		)[::-1]
+			url = f'https://api.zoom.us/v2/users/{user_email}/recordings?from={local_start_date_str}&to={local_end_date_str}'
+			meeting_uuids += paginate_reduce(
+				url, [],
+				lambda ids, page: ids + list(map(lambda meeting: meeting['uuid'], page['meetings']))
+			)[::-1]
 
-		local_start_date = local_end_date + datetime.timedelta(days=1)
+			local_start_date = local_end_date + datetime.timedelta(days=1)
+			progress_bar.update(1)
 
 	return meeting_uuids
 
 def get_meetings(meeting_uuids):
 	meetings = []
-	for meeting_uuid in meeting_uuids:
+	utils.print_bright(f'Collecting recordings from {len(meeting_uuids)} meetings:')
+	for meeting_uuid in tqdm(meeting_uuids):
 		url = f'https://api.zoom.us/v2/meetings/{utils.double_encode(meeting_uuid)}/recordings'
 		meetings.append(get_with_token(lambda t: requests.get(url=url, headers=get_headers(t))).json())
 
