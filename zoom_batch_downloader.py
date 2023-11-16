@@ -14,7 +14,7 @@ colorama.init()
 def main():
 	CONFIG.OUTPUT_PATH = utils.prepend_path_on_windows(CONFIG.OUTPUT_PATH)
 
-	print_filter_warning()
+	print_filter_warnings()
 
 	from_date = datetime.datetime(CONFIG.START_YEAR, CONFIG.START_MONTH, CONFIG.START_DAY or 1)
 	to_date = datetime.datetime(
@@ -31,7 +31,7 @@ def main():
 		f'Skipped: {skipped_count} files.'
 	)
 
-def print_filter_warning():
+def print_filter_warnings():
 	did_print = False
 
 	if CONFIG.TOPICS:
@@ -282,10 +282,13 @@ if __name__ == '__main__':
 			)
 		else:
 			raise
+
 	except Exception as error:
 		print()
 		if not getattr(CONFIG, "VERBOSE_OUTPUT"):
 			utils.print_bright_red(f'Error: {error}')
+		elif utils.is_debug():
+			raise
 		else:
 			utils.print_dim_red(traceback.format_exc())
 

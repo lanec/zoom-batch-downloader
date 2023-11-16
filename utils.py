@@ -2,6 +2,7 @@ import math
 import os
 import re
 import shutil
+import sys
 import unicodedata
 import urllib
 from json import dumps
@@ -168,3 +169,7 @@ def download_with_progress(url, output_path, expected_size, verbose_output, size
 				pass
 			
 			raise
+
+def is_debug() -> bool:
+    """Return if the debugger is currently active"""
+    return hasattr(sys, 'gettrace') and sys.gettrace() is not None
