@@ -211,10 +211,13 @@ def download_recordings_from_meetings(meetings, host_folder):
 
 			url = recording_file['download_url']
 			topic = utils.slugify(meeting['topic'])
-			ext = recording_file.get('file_extension') or os.path.splitext(recording_file['file_name'])
+			ext = recording_file.get('file_extension') or os.path.splitext(recording_file['file_name'])[1]
 			recording_name = utils.slugify(f'{topic}__{recording_file["recording_start"]}')
 			file_id = recording_file['id']
-			file_name = utils.slugify(f'{recording_name}__{recording_file["recording_type"]}__{file_id[-8:]}') + '.' + ext
+			file_name_suffix =  os.path.splitext(recording_file['file_name'][0]) + '__' if 'file_name' in recording_file else ''
+			file_name = utils.slugify(
+				f'{recording_name}__{recording_file["recording_type"]}__{file_name_suffix}{file_id[-8:]}'
+			) + '.' + ext
 			file_size = int(recording_file.get('file_size'))
 
 			if download_recording_file(url, host_folder, file_name, file_size, topic, recording_name):
