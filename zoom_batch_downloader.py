@@ -163,7 +163,7 @@ def get_meeting_uuids(user_email, start_date, end_date):
 	delta = datetime.timedelta(days=29)
 	
 	utils.print_bright('Scanning for meetings:')
-	estimated_iterations = math.ceil((end_date-start_date) / delta)
+	estimated_iterations = math.ceil((end_date-start_date) / datetime.timedelta(days=30))
 	with utils.percentage_tqdm(total=estimated_iterations) as progress_bar:
 		while local_start_date <= end_date:
 			local_end_date = min(local_start_date + delta, end_date)
