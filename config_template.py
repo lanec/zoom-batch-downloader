@@ -42,8 +42,8 @@ GROUP_BY_TOPIC = True
 # Note: One "meeting" can have multiple recording instances.
 GROUP_BY_RECORDING = False
 
-# If True, participant audio files will be downloaded as well. This works when "Record a separate audio file of each participant"
-# is enabled.
+# If True, participant audio files will be downloaded as well.
+# This works when "Record a separate audio file of each participant" is enabled.
 INCLUDE_PARTICIPANT_AUDIO = True
 
 # Set to True for more verbose output
@@ -60,7 +60,8 @@ TB = 1024 * GB
 # expected to get below this amount as a result of the new file.
 MINIMUM_FREE_DISK = 1 * GB
 
-# Tolerance for recording files size mismatch between the declared size in Zoom Servers and the files actually downloaded
-# from the server. It seems like sometimes they don't match perfectly.
-# High tolerance might cause issues like corrupt downloads not being recognized by script.
-FILE_SIZE_MISMATCH_TOLERANCE = 0 * MB
+# Tolerance for recording files size mismatch between the declared size in Zoom Servers and the files 
+# actually downloaded the server.
+# This was observed to happen sometimes on google drive mounted storage (mismatches of < 300 KBs)
+# Note: High tolerance might cause issues like corrupt downloads not being recognized by script.
+FILE_SIZE_MISMATCH_TOLERANCE = 0 * KB
