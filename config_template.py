@@ -28,6 +28,9 @@ TOPICS = [
     # R"############",
 ]
 
+# If True, topics that partially match your topic filters are downloaded. If False, only meetings with exact topic matches are downloaded.
+PARTIAL_MATCH_TOPICS = False
+
 # Put here the file types you wish to download. If empty, no file type filtering will happen.
 RECORDING_FILE_TYPES = [
     # R"MP4",            # Video file of the recording.

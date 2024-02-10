@@ -17,6 +17,9 @@ def main():
 
 	print_filter_warnings()
 
+	if CONFIG.PARTIAL_MATCH_TOPICS:
+		CONFIG.TOPICS = [topic.lower() for topic in CONFIG.TOPICS]
+
 	from_date = datetime.datetime(CONFIG.START_YEAR, CONFIG.START_MONTH, CONFIG.START_DAY or 1)
 	to_date = datetime.datetime(
 		CONFIG.END_YEAR, CONFIG.END_MONTH, CONFIG.END_DAY or monthrange(CONFIG.END_YEAR, CONFIG.END_MONTH)[1],
@@ -211,8 +214,15 @@ def download_recordings_from_meetings(meetings, host_folder):
 	file_count, total_size, skipped_count = 0, 0, 0
 
 	for meeting in meetings:
-		if CONFIG.TOPICS and meeting['topic'] not in CONFIG.TOPICS and utils.slugify(meeting['topic']) not in CONFIG.TOPICS:
-			continue
+		if CONFIG.TOPICS and meeting['topic']:
+			if CONFIG.PARTIAL_MATCH_TOPICS:
+				topic_lower = str.lower(meeting['topic'])
+				topic_lower_slug = utils.slugify(meeting['topic'])
+				if not any(topic in topic_lower for topic in CONFIG.TOPICS) and not any(topic in topic_lower_slug for topic in CONFIG.TOPICS):
+					continue
+			else:
+				if meeting['topic'] not in CONFIG.TOPICS and utils.slugify(meeting['topic']) not in CONFIG.TOPICS:
+					continue
 		
 		recording_files = meeting.get('recording_files') or []
 		participant_audio_files = meeting.get('participant_audio_files') or [] if CONFIG.INCLUDE_PARTICIPANT_AUDIO else []
