@@ -199,6 +199,8 @@ def get_meeting_uuids(user_email, start_date, end_date):
 			local_start_date = local_end_date + datetime.timedelta(days=1)
 			progress_bar.update(1)
 
+	utils.print_dim(f"Meetings found: {len(meeting_uuids)}")
+
 	return meeting_uuids
 
 def get_meetings(meeting_uuids):
@@ -207,6 +209,8 @@ def get_meetings(meeting_uuids):
 	for meeting_uuid in utils.percentage_tqdm(meeting_uuids):
 		url = f'https://api.zoom.us/v2/meetings/{utils.double_encode(meeting_uuid)}/recordings'
 		meetings.append(get_with_token(lambda t: requests.get(url=url, headers=get_headers(t))).json())
+
+	utils.print_dim(f"Recordings found: {len(meetings)}")
 
 	return meetings
 
