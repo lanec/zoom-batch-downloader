@@ -144,7 +144,7 @@ def download_recordings(users, from_date, to_date):
 
 	for user_email, user_name in users:
 		user_description = get_user_description(user_email, user_name)
-		user_host_folder = get_user_host_folder(user_email)
+		host_folder = CONFIG.OUTPUT_PATH
 
 		utils.print_bright(
 			f'Downloading recordings from user {user_description} - Starting at {date_to_str(from_date)} '
@@ -152,7 +152,7 @@ def download_recordings(users, from_date, to_date):
 		)
 	
 		meetings = get_meetings(get_meeting_uuids(user_email, from_date, to_date))
-		user_file_count, user_total_size, user_skipped_count = download_recordings_from_meetings(meetings, user_host_folder)
+		user_file_count, user_total_size, user_skipped_count = download_recordings_from_meetings(meetings, host_folder, user_email)
 
 		utils.print_bright('######################################################################')
 		print()
@@ -166,12 +166,6 @@ def download_recordings(users, from_date, to_date):
 def get_user_description(user_email, user_name):
 	return f'{user_email} ({user_name})' if (user_name) else user_email
 
-def get_user_host_folder(user_email):
-	if CONFIG.GROUP_BY_USER:
-		return os.path.join(CONFIG.OUTPUT_PATH, user_email)
-	else:
-		return CONFIG.OUTPUT_PATH
-	
 def date_to_str(date):
 	return date.strftime('%Y-%m-%d')
 
@@ -214,7 +208,7 @@ def get_meetings(meeting_uuids):
 
 	return meetings
 
-def download_recordings_from_meetings(meetings, host_folder):
+def download_recordings_from_meetings(meetings, host_folder, user_email):
 	file_count, total_size, skipped_count = 0, 0, 0
 
 	for meeting in meetings:
@@ -240,17 +234,12 @@ def download_recordings_from_meetings(meetings, host_folder):
 
 			url = recording_file['download_url']
 			topic = utils.slugify(meeting['topic'])
-			ext = recording_file.get('file_extension') or os.path.splitext(recording_file['file_name'])[1]
-			recording_name = utils.slugify(f'{topic}__{recording_file["recording_start"]}')
-			file_id = recording_file['id']
-			file_name_suffix =  os.path.splitext(recording_file['file_name'])[0] + '__' if 'file_name' in recording_file else ''
-			recording_type_suffix =  recording_file["recording_type"] + '__' if 'recording_type' in recording_file else ''
-			file_name = utils.slugify(
-				f'{recording_name}__{recording_type_suffix}{file_name_suffix}{file_id[-8:]}'
-			) + '.' + ext
+			recording_name = utils.slugify(f'{topic}')
+
+			file_name = build_file_name(recording_file, topic)
 			file_size = int(recording_file.get('file_size'))
 
-			if download_recording_file(url, host_folder, file_name, file_size, topic, recording_name):
+			if download_recording_file(url, host_folder, file_name, file_size, topic, recording_name, recording_file["recording_start"], user_email):
 				total_size += file_size
 				file_count += 1
 			else:
@@ -258,12 +247,39 @@ def download_recordings_from_meetings(meetings, host_folder):
 	
 	return file_count, total_size, skipped_count
 
-def download_recording_file(download_url, host_folder, file_name, file_size, topic, recording_name):
+def build_file_name(recording_file, topic):
+	recording_name = utils.slugify(f'{topic}')
+	recording_start = utils.slugify(f'{recording_file["recording_start"]}')
+	file_id = recording_file['id'][-8:]
+	file_name_suffix =  os.path.splitext(recording_file['file_name'])[0] + '__' if 'file_name' in recording_file else ''
+	recording_type_suffix = ''
+
+	recording_type_suffix =  recording_file["recording_type"] if 'recording_type' in recording_file else ''
+	file_extension = recording_file.get('file_extension') or os.path.splitext(recording_file['file_name'])[1]
+	
+	file_name_pieces = []
+	for format in CONFIG.FILE_NAME_FORMAT:
+		if format == "RECORDING_START_DATETIME":
+			file_name_pieces.append(f'{recording_start}')
+		if format == "RECORDING_NAME":
+			file_name_pieces.append(f'{recording_name}{file_name_suffix}')
+		if format == "RECORDING_TYPE":
+			file_name_pieces.append(f'{recording_type_suffix}')
+		if format == "FILE_ID":
+			file_name_pieces.append(f'{file_id}')
+
+	file_name = utils.slugify(f'{CONFIG.FILE_NAME_SEPERATOR}'.join(file_name_pieces)) + '.' + file_extension
+
+	return file_name
+
+def download_recording_file(download_url, host_folder, file_name, file_size, topic, recording_name, recording_start, user_email):
+	folder_path = create_folder_path(host_folder, topic, recording_name, recording_start, user_email)
+	file_path = os.path.join(folder_path, file_name)
+
 	if CONFIG.VERBOSE_OUTPUT:
 		print()
 		utils.print_dim(f'URL: {download_url}')
-
-	file_path = create_path(host_folder, file_name, topic, recording_name)
+		utils.print_dim(f'Folder: {folder_path}')
 
 	if os.path.exists(file_path) and abs(os.path.getsize(file_path) - file_size) <= CONFIG.FILE_SIZE_MISMATCH_TOLERANCE:
 		utils.print_dim(f'Skipping existing file: {file_name}')
@@ -287,16 +303,25 @@ def download_recording_file(download_url, host_folder, file_name, file_size, top
 
 	return True
 
-def create_path(host_folder, file_name, topic, recording_name):
+def create_folder_path(host_folder, topic, recording_name, recording_start, user_email):
 	folder_path = host_folder
 
-	if CONFIG.GROUP_BY_TOPIC:
-		folder_path = os.path.join(folder_path, topic)
+	for group_by in CONFIG.GROUP_FOLDERS_BY:
+		if group_by == "YEAR_MONTH":
+			recording_start_date = datetime.datetime.strptime(recording_start, '%Y-%m-%dT%H:%M:%SZ')
+			year_month = recording_start_date.strftime('%Y-%m')
+			folder_path = os.path.join(folder_path, year_month)
+		if group_by == "USER_EMAIL":
+			folder_path = os.path.join(folder_path, user_email)
+		if group_by == "TOPIC":
+			folder_path = os.path.join(folder_path, topic)
+		
 	if CONFIG.GROUP_BY_RECORDING:
 		folder_path = os.path.join(folder_path, recording_name)
 
 	os.makedirs(folder_path, exist_ok=True)
-	return os.path.join(folder_path, file_name)
+
+	return folder_path
 
 def do_with_token(do):
 	def do_as_get(token):
