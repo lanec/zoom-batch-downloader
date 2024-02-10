@@ -8,10 +8,16 @@ OUTPUT_PATH = R"C:\Test\Zoom"
 
 # Date range (inclusive) for downloads, None value for Days gets replaced by first/last day of the month.
 START_DAY, START_MONTH, START_YEAR = None, 5, 2020
-END_DAY, END_MONTH, END_YEAR = None , 3, 2022
+END_DAY,   END_MONTH,   END_YEAR   = None, 3, 2022
 
 # Put here emails of the users you want to check for recordings. If empty, all users under the account will be checked.
-USERS = [
+USERS_INCLUDE = [
+    # R"####@####.####",
+    # R"####@####.####",
+]
+
+# Put here emails of the users you want to exclude from checking for recordings. Optional.
+USERS_EXCLUDE = [
     # R"####@####.####",
     # R"####@####.####",
 ]

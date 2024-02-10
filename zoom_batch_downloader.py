@@ -38,8 +38,11 @@ def print_filter_warnings():
 	if CONFIG.TOPICS:
 		utils.print_bright(f'Topics filter is active {CONFIG.TOPICS}')
 		did_print = True
-	if CONFIG.USERS:
-		utils.print_bright(f'Users filter is active {CONFIG.USERS}')
+	if CONFIG.USERS_INCLUDE:
+		utils.print_bright(f'Users include filter is active {CONFIG.USERS_INCLUDE}')
+		did_print = True
+	if CONFIG.USERS_EXCLUDE:
+		utils.print_bright(f'Users exclude filter is active {CONFIG.USERS_EXCLUDE}')
 		did_print = True
 	if CONFIG.RECORDING_FILE_TYPES:
 		utils.print_bright(f'Recording file types filter is active {CONFIG.RECORDING_FILE_TYPES}')
@@ -49,16 +52,29 @@ def print_filter_warnings():
 		print()
 
 def get_users():
-	if CONFIG.USERS:
-		return [(email, '') for email in CONFIG.USERS]
+	if CONFIG.USERS_INCLUDE:
+		users = [(email, '') for email in CONFIG.USERS_INCLUDE]
+	else:
+		users = paginate_reduce(
+			'https://api.zoom.us/v2/users?status=active', [],
+			lambda users, page: users + [(user['email'], get_user_name(user)) for user in page['users']]
+		) + paginate_reduce(
+			'https://api.zoom.us/v2/users?status=inactive', [],
+			lambda users, page: users + [(user['email'], get_user_name(user)) for user in page['users']]
+		)
+	
+	if CONFIG.VERBOSE_OUTPUT:
+		utils.print_dim('Found matching users:')
+	
+	for user_email, user_name in users:
+		if user_email in CONFIG.USERS_EXCLUDE:
+			users.pop(users.index((user_email, user_name)))
+			continue
 
-	return paginate_reduce(
-		'https://api.zoom.us/v2/users?status=active', [],
-		lambda users, page: users + [(user['email'], get_user_name(user)) for user in page['users']]
-	) + paginate_reduce(
-		'https://api.zoom.us/v2/users?status=inactive', [],
-		lambda users, page: users + [(user['email'], get_user_name(user)) for user in page['users']]
-	)
+		if CONFIG.VERBOSE_OUTPUT:
+			utils.print_dim(f'{user_name} <{user_email}>')
+
+	return users
 
 def paginate_reduce(url, initial, reduce):
 	initial_url = utils.add_url_params(url, {'page_size': 300})
