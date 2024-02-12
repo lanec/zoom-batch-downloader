@@ -15,7 +15,7 @@ colorama.init()
 
 def main():
 	if CONFIG.VERBOSE_OUTPUT:
-		start_monitoring(seconds_frozen=10, test_interval=100)
+		start_monitoring(seconds_frozen=20, test_interval=100)
 		
 	CONFIG.OUTPUT_PATH = utils.prepend_path_on_windows(CONFIG.OUTPUT_PATH)
 
