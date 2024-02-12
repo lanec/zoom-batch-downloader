@@ -7,12 +7,16 @@ from calendar import monthrange
 import colorama
 import requests
 from colorama import Fore, Style
+from hanging_threads import start_monitoring
 
 import utils
 
 colorama.init()
 
 def main():
+	if CONFIG.VERBOSE_OUTPUT:
+		start_monitoring(seconds_frozen=10, test_interval=100)
+		
 	CONFIG.OUTPUT_PATH = utils.prepend_path_on_windows(CONFIG.OUTPUT_PATH)
 
 	print_filter_warnings()
