@@ -15,7 +15,7 @@ colorama.init()
 
 def main():
 	if CONFIG.VERBOSE_OUTPUT:
-		start_monitoring(seconds_frozen=20, test_interval=100)
+		start_monitoring(seconds_frozen=30, test_interval=100)
 		
 	CONFIG.OUTPUT_PATH = utils.prepend_path_on_windows(CONFIG.OUTPUT_PATH)
 
@@ -56,15 +56,28 @@ def get_users():
 	if CONFIG.USERS:
 		return [(email, '') for email in CONFIG.USERS]
 
-	return paginate_reduce(
-		'https://api.zoom.us/v2/users?status=active', [],
-		lambda users, page: users + [(user['email'], get_user_name(user)) for user in page['users']]
-	) + paginate_reduce(
-		'https://api.zoom.us/v2/users?status=inactive', [],
-		lambda users, page: users + [(user['email'], get_user_name(user)) for user in page['users']]
-	)
+	utils.print_bright('Scanning for users:')
+	pages_count = get_with_token(
+		lambda t: requests.get(url='https://api.zoom.us/v2/users?status=active', headers=get_headers(t))
+	).json()['page_count'] + get_with_token(
+		lambda t: requests.get(url='https://api.zoom.us/v2/users?status=inactive', headers=get_headers(t))
+	).json()['page_count']
+	
+	with utils.percentage_tqdm(total=pages_count, fill_on_close=True) as progress_bar:
+		users = paginate_reduce(
+			'https://api.zoom.us/v2/users?status=active', [],
+			lambda users, page: users + [(user['email'], get_user_name(user)) for user in page['users']],
+			update_progress=lambda: progress_bar.update(1)
+		) + paginate_reduce(
+			'https://api.zoom.us/v2/users?status=inactive', [],
+			lambda users, page: users + [(user['email'], get_user_name(user)) for user in page['users']],
+			update_progress=lambda: progress_bar.update(1)
+		)
+	
+	print()
+	return users
 
-def paginate_reduce(url, initial, reduce):
+def paginate_reduce(url, initial, reduce, update_progress = None):
 	initial_url = utils.add_url_params(url, {'page_size': 300})
 	page = get_with_token(
 		lambda t: requests.get(url=initial_url, headers=get_headers(t))
@@ -73,6 +86,7 @@ def paginate_reduce(url, initial, reduce):
 	result = initial
 	while page:
 		result = reduce(result, page)
+		if update_progress: update_progress()
 
 		next_page_token = page['next_page_token']
 		if next_page_token:

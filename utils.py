@@ -178,7 +178,13 @@ def is_debug() -> bool:
     return hasattr(sys, 'gettrace') and sys.gettrace() is not None
 
 class percentage_tqdm(tqdm):
-	def __init__(self, iterable=None, total=None):
+	def __init__(self, iterable=None, total=None, fill_on_close=False):
 		tqdm.__init__(
 			self, iterable=iterable, total=total, bar_format='{l_bar}{bar}| [{elapsed}<{remaining}]', dynamic_ncols=True
 		)
+		self.fill_on_close = fill_on_close
+
+	def close(self):
+		if self.fill_on_close:
+			self.total = self.n
+		tqdm.close(self)
