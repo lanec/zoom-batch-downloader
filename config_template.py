@@ -8,10 +8,16 @@ OUTPUT_PATH = R"C:\Test\Zoom"
 
 # Date range (inclusive) for downloads, None value for Days gets replaced by first/last day of the month.
 START_DAY, START_MONTH, START_YEAR = None, 5, 2020
-END_DAY, END_MONTH, END_YEAR = None , 3, 2022
+END_DAY,   END_MONTH,   END_YEAR   = None, 3, 2022
 
 # Put here emails of the users you want to check for recordings. If empty, all users under the account will be checked.
-USERS = [
+USERS_INCLUDE = [
+    # R"####@####.####",
+    # R"####@####.####",
+]
+
+# Put here emails of the users you want to exclude from checking for recordings. Optional.
+USERS_EXCLUDE = [
     # R"####@####.####",
     # R"####@####.####",
 ]
@@ -21,6 +27,9 @@ TOPICS = [
     # R"############",
     # R"############",
 ]
+
+# If True, topics that partially match your topic filters are downloaded. If False, only meetings with exact topic matches are downloaded.
+PARTIAL_MATCH_TOPICS = False
 
 # Put here the file types you wish to download. If empty, no file type filtering will happen.
 RECORDING_FILE_TYPES = [
@@ -32,11 +41,13 @@ RECORDING_FILE_TYPES = [
     # R"SUMMARY",        # Summary file of the recording in JSON file format.
 ]
 
-# If True, recordings will be grouped in folders by their owning user.
-GROUP_BY_USER = True
-
-# If True, recordings will be grouped in folders by their topics
-GROUP_BY_TOPIC = True
+# Group records in a folder hierarchy using the order below.
+# Reorder or comment out any of the folder groups below to control the folder hierarchy created to orgainze the downloaded recording files.
+GROUP_FOLDERS_BY = [
+    # R"YEAR_MONTH",     # Recordings will be grouped in folders by their recording start date in yyyy-mm format.
+     R"USER_EMAIL",     # Recordings will be grouped in folders by their owning user's email address.
+     R"TOPIC",          # Recordings will be grouped in folders by their topics.
+]
 
 # If True, each instance of recording will be in its own folder (which may contain multiple files).
 # Note: One "meeting" can have multiple recording instances.
@@ -45,6 +56,18 @@ GROUP_BY_RECORDING = False
 # If True, participant audio files will be downloaded as well.
 # This works when "Record a separate audio file of each participant" is enabled.
 INCLUDE_PARTICIPANT_AUDIO = True
+
+# Recording file name format to use when saving files. Reorder or comment out any file name format pieces below to control the file naming pattern.
+# Example: 2023-12-25t143021z__name-of-the-meeting__audio_transcript__ff625374.VTT
+FILE_NAME_FORMAT = [
+     R"RECORDING_START_DATETIME",   # Recording start datetime
+     R"RECORDING_NAME",             # Recording name
+     R"RECORDING_TYPE",             # Recoding type
+     R"FILE_ID",                    # Recording unique file ID
+]
+
+# Seperator character(s) to place in between the file name format pieces when building the recording file names.
+FILE_NAME_SEPERATOR = "__"
 
 # Set to True for more verbose output
 VERBOSE_OUTPUT = False
