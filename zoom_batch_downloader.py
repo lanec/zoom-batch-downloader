@@ -143,7 +143,7 @@ def get_meeting_uuids(user_email, start_date, end_date):
 			url = f'https://api.zoom.us/v2/users/{user_email}/recordings?from={local_start_date_str}&to={local_end_date_str}'
 			meeting_uuids.extend(client.paginate_reduce(
 				url, [],
-				lambda ids, page: ids.extend(list(map(lambda meeting: meeting['uuid'], page['meetings'])))
+				lambda ids, page: ids.extend([meeting['uuid'] for meeting in page['meetings']])
 			)[::-1])
 
 			local_start_date = local_end_date + datetime.timedelta(days=1)
