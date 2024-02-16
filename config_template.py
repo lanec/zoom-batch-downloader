@@ -26,8 +26,10 @@ TOPICS = [
 RECORDING_FILE_TYPES = [
     # R"MP4",            # Video file of the recording.
     # R"M4A",            # Audio-only file of the recording.
+    # R"TIMELINE",       # Timestamp file of the recording in JSON file format.
     # R"TRANSCRIPT",     # Transcription file of the recording in VTT format.
     # R"CHAT",           # A TXT file containing in-meeting chat messages that were sent during the meeting.
+    # R"CC",             # File containing closed captions of the recording in VTT file format.
     # R"CSV",            # File containing polling data in CSV format.
     # R"SUMMARY",        # Summary file of the recording in JSON file format.
 ]
