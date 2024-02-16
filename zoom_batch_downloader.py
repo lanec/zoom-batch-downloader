@@ -168,7 +168,7 @@ def download_recordings_from_meetings(meetings, host_folder):
 			continue
 		
 		recording_files = meeting.get('recording_files') or []
-		participant_audio_files = meeting.get('participant_audio_files') or [] if CONFIG.INCLUDE_PARTICIPANT_AUDIO else []
+		participant_audio_files = (meeting.get('participant_audio_files') or []) if CONFIG.INCLUDE_PARTICIPANT_AUDIO else []
 
 		for recording_file in recording_files + participant_audio_files:
 			if 'file_size' not in recording_file:
