@@ -3,14 +3,24 @@ import math
 import os
 import traceback
 from calendar import monthrange
+from types import ModuleType
 
 import colorama
-import requests
 from colorama import Fore, Style
 
 import utils
+from zoom_client import zoom_client
 
 colorama.init()
+
+try:
+	import config as CONFIG
+except ImportError:
+	utils.print_bright_red('Missing config file, copy config_template.py to config.py and change as needed.')
+
+client = zoom_client(
+	account_id=CONFIG.ACCOUNT_ID, client_id=CONFIG.CLIENT_ID, client_secret=CONFIG.CLIENT_SECRET
+)
 
 def main():
 	CONFIG.OUTPUT_PATH = utils.prepend_path_on_windows(CONFIG.OUTPUT_PATH)
@@ -53,18 +63,15 @@ def get_users():
 		return [(email, '') for email in CONFIG.USERS]
 
 	utils.print_bright('Scanning for users:')
-	pages_count = get_with_token(
-		lambda t: requests.get(url='https://api.zoom.us/v2/users?status=active', headers=get_headers(t))
-	).json()['page_count'] + get_with_token(
-		lambda t: requests.get(url='https://api.zoom.us/v2/users?status=inactive', headers=get_headers(t))
-	).json()['page_count']
+	pages_count = client.get('https://api.zoom.us/v2/users?status=active').json()['page_count'] 
+	+ client.get('https://api.zoom.us/v2/users?status=inactive').json()['page_count']
 	
 	with utils.percentage_tqdm(total=pages_count, fill_on_close=True) as progress_bar:
-		users = paginate_reduce(
+		users = client.paginate_reduce(
 			'https://api.zoom.us/v2/users?status=active', [],
 			lambda users, page: users.extend([(user['email'], get_user_name(user)) for user in page['users']]) or users,
 			update_progress=lambda: progress_bar.update(1)
-		) + paginate_reduce(
+		) + client.paginate_reduce(
 			'https://api.zoom.us/v2/users?status=inactive', [],
 			lambda users, page: users.extend([(user['email'], get_user_name(user)) for user in page['users']]) or users,
 			update_progress=lambda: progress_bar.update(1)
@@ -72,58 +79,6 @@ def get_users():
 	
 	print()
 	return users
-
-def paginate_reduce(url, initial, reduce, update_progress = None):
-	initial_url = utils.add_url_params(url, {'page_size': 300})
-	page = get_with_token(
-		lambda t: requests.get(url=initial_url, headers=get_headers(t))
-	).json()
-
-	result = initial
-	while page:
-		result = reduce(result, page)
-		if update_progress: update_progress()
-
-		next_page_token = page['next_page_token']
-		if next_page_token:
-			next_url = utils.add_url_params(url, {'page_token': next_page_token})
-			page = get_with_token(lambda t: requests.get(next_url, headers=get_headers(t))).json()
-		else:
-			page = None
-
-	return result
-
-def get_with_token(get):
-	cached_token = getattr(get_with_token, 'token', '')
-
-	if cached_token:
-		response = get(cached_token)
-	
-	if not cached_token or response.status_code == 401:
-		get_with_token.token = fetch_token()
-		response = get(get_with_token.token)
-
-	if not response.ok:
-		raise Exception(f'{response.status_code} {response.text}')
-	
-	return response
-
-def fetch_token():
-	data = {
-		'grant_type': 'account_credentials',
-		'account_id': CONFIG.ACCOUNT_ID
-	}
-	response = requests.post('https://api.zoom.us/oauth/token', auth=(CONFIG.CLIENT_ID, CONFIG.CLIENT_SECRET),  data=data).json()
-	if 'access_token' not in response:
-		raise Exception(f'Unable to fetch access token: {response["reason"]} - verify your credentials.')
-
-	return response['access_token']
-
-def get_headers(token):
-	return {
-		'Authorization': f'Bearer {token}',
-		'Content-Type': 'application/json'
-	} 
 
 def get_user_name(user_data):
 	first_name = user_data.get("first_name")
@@ -186,10 +141,10 @@ def get_meeting_uuids(user_email, start_date, end_date):
 			local_end_date_str = date_to_str(local_end_date)
 
 			url = f'https://api.zoom.us/v2/users/{user_email}/recordings?from={local_start_date_str}&to={local_end_date_str}'
-			meeting_uuids += paginate_reduce(
+			meeting_uuids.extend(client.paginate_reduce(
 				url, [],
 				lambda ids, page: ids.extend(list(map(lambda meeting: meeting['uuid'], page['meetings']))) or ids
-			)[::-1]
+			)[::-1])
 
 			local_start_date = local_end_date + datetime.timedelta(days=1)
 			progress_bar.update(1)
@@ -201,7 +156,7 @@ def get_meetings(meeting_uuids):
 	utils.print_bright(f'Scanning for recordings:')
 	for meeting_uuid in utils.percentage_tqdm(meeting_uuids):
 		url = f'https://api.zoom.us/v2/meetings/{utils.double_encode(meeting_uuid)}/recordings'
-		meetings.append(get_with_token(lambda t: requests.get(url=url, headers=get_headers(t))).json())
+		meetings.append(client.get(url).json())
 
 	return meetings
 
@@ -260,7 +215,7 @@ def download_recording_file(download_url, host_folder, file_name, file_size, top
 	utils.wait_for_disk_space(file_size, CONFIG.OUTPUT_PATH, CONFIG.MINIMUM_FREE_DISK, interval=5)
 
 	tmp_file_path = file_path + '.tmp'
-	do_with_token(
+	client.do_with_token(
 		lambda t: utils.download_with_progress(
 			f'{download_url}?access_token={t}', tmp_file_path, file_size, CONFIG.VERBOSE_OUTPUT,
 			CONFIG.FILE_SIZE_MISMATCH_TOLERANCE
@@ -282,33 +237,11 @@ def create_path(host_folder, file_name, topic, recording_name):
 	os.makedirs(folder_path, exist_ok=True)
 	return os.path.join(folder_path, file_name)
 
-def do_with_token(do):
-	def do_as_get(token):
-		test_url = 'https://api.zoom.us/v2/users/me/recordings'
-
-		test_response = requests.get(test_url, headers=get_headers(token))
-		if test_response.ok:
-			try:
-				do(token)
-			except:
-				test_response = requests.get(test_url, headers=get_headers(token))
-				if test_response.ok:
-					raise
-
-		return test_response
-		
-	get_with_token(lambda t: do_as_get(t))
-
 if __name__ == '__main__':
-	try:
-		import config as CONFIG
-	except ImportError:
-		utils.print_bright_red('Missing config file, copy config_template.py to config.py and change as needed.')
-
 	try:
 		main()
 	except AttributeError as error:
-		if error.obj.__name__ == 'config':
+		if isinstance(error.obj, ModuleType) and error.obj.__name__ == 'config':
 			print()
 			utils.print_bright_red(
 				f'Variable {error.name} is not defined in config.py. '
