@@ -69,11 +69,11 @@ def get_users():
 	with utils.percentage_tqdm(total=pages_count, fill_on_close=True) as progress_bar:
 		users = client.paginate_reduce(
 			'https://api.zoom.us/v2/users?status=active', [],
-			lambda users, page: users.extend([(user['email'], get_user_name(user)) for user in page['users']]) or users,
+			lambda users, page: users.extend([(user['email'], get_user_name(user)) for user in page['users']]),
 			update_progress=lambda: progress_bar.update(1)
 		) + client.paginate_reduce(
 			'https://api.zoom.us/v2/users?status=inactive', [],
-			lambda users, page: users.extend([(user['email'], get_user_name(user)) for user in page['users']]) or users,
+			lambda users, page: users.extend([(user['email'], get_user_name(user)) for user in page['users']]),
 			update_progress=lambda: progress_bar.update(1)
 		)
 	
@@ -143,7 +143,7 @@ def get_meeting_uuids(user_email, start_date, end_date):
 			url = f'https://api.zoom.us/v2/users/{user_email}/recordings?from={local_start_date_str}&to={local_end_date_str}'
 			meeting_uuids.extend(client.paginate_reduce(
 				url, [],
-				lambda ids, page: ids.extend(list(map(lambda meeting: meeting['uuid'], page['meetings']))) or ids
+				lambda ids, page: ids.extend(list(map(lambda meeting: meeting['uuid'], page['meetings'])))
 			)[::-1])
 
 			local_start_date = local_end_date + datetime.timedelta(days=1)
