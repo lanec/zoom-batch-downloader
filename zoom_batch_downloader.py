@@ -63,8 +63,8 @@ def get_users():
 		return [(email, '') for email in CONFIG.USERS]
 
 	utils.print_bright('Scanning for users:')
-	pages_count = client.get('https://api.zoom.us/v2/users?status=active').json()['page_count'] 
-	+ client.get('https://api.zoom.us/v2/users?status=inactive').json()['page_count']
+	pages_count = (client.get('https://api.zoom.us/v2/users?status=active')['page_count'] or 1)
+	+ (client.get('https://api.zoom.us/v2/users?status=inactive')['page_count'] or 1)
 	
 	with utils.percentage_tqdm(total=pages_count, fill_on_close=True) as progress_bar:
 		users = client.paginate_reduce(
@@ -153,10 +153,12 @@ def get_meeting_uuids(user_email, start_date, end_date):
 
 def get_meetings(meeting_uuids):
 	meetings = []
-	utils.print_bright(f'Scanning for recordings:')
-	for meeting_uuid in utils.percentage_tqdm(meeting_uuids):
-		url = f'https://api.zoom.us/v2/meetings/{utils.double_encode(meeting_uuid)}/recordings'
-		meetings.append(client.get(url).json())
+
+	if meeting_uuids:
+		utils.print_bright(f'Scanning for recordings:')
+		for meeting_uuid in utils.percentage_tqdm(meeting_uuids):
+			url = f'https://api.zoom.us/v2/meetings/{utils.double_encode(meeting_uuid)}/recordings'
+			meetings.append(client.get(url))
 
 	return meetings
 

@@ -10,9 +10,9 @@ class zoom_client:
         self.cached_token = None
 
     def get(self, url):
-        return self.get_with_token(lambda t: requests.get(url=url, headers=self.get_headers(t)))
+        return self._get_with_token(lambda t: requests.get(url=url, headers=self.get_headers(t))).json()
 
-    def get_with_token(self, get):
+    def _get_with_token(self, get):
         if self.cached_token:
             response = get(self.cached_token)
         
@@ -78,4 +78,4 @@ class zoom_client:
 
             return test_response
             
-        self.get_with_token(lambda t: do_as_get(t))
+        self._get_with_token(lambda t: do_as_get(t))
