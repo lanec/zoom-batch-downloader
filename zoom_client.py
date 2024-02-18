@@ -46,7 +46,7 @@ class zoom_client:
     
     def paginate_reduce(self, url, initial, reduce, update_progress = None):
         initial_url = utils.add_url_params(url, {'page_size': 300})
-        page = self.get(initial_url).json()
+        page = self.get(initial_url)
 
         result = initial
         while page:
@@ -55,7 +55,7 @@ class zoom_client:
             next_page_token = page['next_page_token']
             if next_page_token:
                 next_url = utils.add_url_params(url, {'page_token': next_page_token})
-                page = self.get(next_url).json()
+                page = self.get(next_url)
             else:
                 page = None
 
