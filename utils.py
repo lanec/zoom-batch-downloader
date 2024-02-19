@@ -111,7 +111,7 @@ def wait_for_disk_space(file_size, path, minimum_free_disk, interval):
 
 def size_to_string(size_bytes, separator = ''):
 	if size_bytes == 0:
-		return '0B'
+		return '0' + str(separator) + 'B'
 	units = ('B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB')
 	i = int(math.floor(math.log(size_bytes, 1024)))
 	p = 1024**i
