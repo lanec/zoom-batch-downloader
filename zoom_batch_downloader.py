@@ -63,19 +63,19 @@ def get_users():
 		return [(email, '') for email in CONFIG.USERS]
 
 	utils.print_bright('Scanning for users:')
-	pages_count = (client.get('https://api.zoom.us/v2/users?status=active')['page_count'] or 1)
-	+ (client.get('https://api.zoom.us/v2/users?status=inactive')['page_count'] or 1)
+	active_url = 'https://api.zoom.us/v2/users?status=active'
+	inactive_url = 'https://api.zoom.us/v2/users?status=inactive'
+
+	page_count = client.get_page_count(active_url) + client.get_page_count(inactive_url)
 	
-	with utils.percentage_tqdm(total=pages_count, fill_on_close=True) as progress_bar:
-		users = client.paginate_reduce(
-			'https://api.zoom.us/v2/users?status=active', [],
-			lambda users, page: users.extend([(user['email'], get_user_name(user)) for user in page['users']]),
-			update_progress=lambda: progress_bar.update(1)
-		) + client.paginate_reduce(
-			'https://api.zoom.us/v2/users?status=inactive', [],
-			lambda users, page: users.extend([(user['email'], get_user_name(user)) for user in page['users']]),
-			update_progress=lambda: progress_bar.update(1)
-		)
+	users = []
+	with utils.percentage_tqdm(total=page_count, fill_on_close=True) as progress_bar:
+		for url in [active_url, inactive_url]:	
+			client.paginate_reduce_into(
+				url, users,
+				lambda users, page: users.extend([(user['email'], get_user_name(user)) for user in page['users']]),
+				update_progress=lambda: progress_bar.update(1)
+			)
 	
 	print()
 	return users
@@ -141,7 +141,7 @@ def get_meeting_uuids(user_email, start_date, end_date):
 			local_end_date_str = date_to_str(local_end_date)
 
 			url = f'https://api.zoom.us/v2/users/{user_email}/recordings?from={local_start_date_str}&to={local_end_date_str}'
-			meeting_uuids.extend(client.paginate_reduce(
+			meeting_uuids.extend(client.paginate_reduce_into(
 				url, [],
 				lambda ids, page: ids.extend([meeting['uuid'] for meeting in page['meetings']])
 			)[::-1])

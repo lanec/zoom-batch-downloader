@@ -3,10 +3,11 @@ import requests
 import utils
 
 class zoom_client:
-    def __init__(self, account_id: str, client_id: str, client_secret: str):
+    def __init__(self, account_id: str, client_id: str, client_secret: str, PAGE_SIZE: int = 300):
         self.account_id = account_id
         self.client_id = client_id
         self.client_secret = client_secret
+        self.PAGE_SIZE = PAGE_SIZE
         self.cached_token = None
 
     def get(self, url):
@@ -42,24 +43,25 @@ class zoom_client:
         return {
             'Authorization': f'Bearer {token}',
             'Content-Type': 'application/json'
-        }   
-    
-    def paginate_reduce(self, url, initial, reduce, update_progress = None):
-        initial_url = utils.add_url_params(url, {'page_size': 300})
-        page = self.get(initial_url)
+        }
 
-        result = initial
-        while page:
+    def get_page_count(self, url):
+        url = utils.add_url_params(url, {'page_size': self.PAGE_SIZE})
+        return self.get(url)['page_count'] or 1   
+    
+    def paginate_reduce_into(self, url, result, reduce, update_progress = None):
+        url = utils.add_url_params(url, {'page_size': self.PAGE_SIZE})
+        page = self.get(url)
+
+        while page:                
             reduce(result, page)
+            if update_progress: update_progress()
 
             next_page_token = page['next_page_token']
             if next_page_token:
-                next_url = utils.add_url_params(url, {'page_token': next_page_token})
-                page = self.get(next_url)
+                page = self.get(utils.add_url_params(url, {'next_page_token': next_page_token}))
             else:
                 page = None
-
-            if update_progress: update_progress()
 
         return result
     
