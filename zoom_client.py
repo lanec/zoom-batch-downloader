@@ -2,6 +2,7 @@ import requests
 
 import utils
 
+
 class zoom_client:
     def __init__(self, account_id: str, client_id: str, client_secret: str, PAGE_SIZE: int = 300):
         self.account_id = account_id

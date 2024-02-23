@@ -12,6 +12,7 @@ from time import sleep
 from colorama import Fore, Style
 from tqdm import tqdm
 
+
 def prepend_path_on_windows(path):
 	if os.name != 'nt':
 		return path
