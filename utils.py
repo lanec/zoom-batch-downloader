@@ -132,19 +132,23 @@ def print_dim(msg):
 	print(Style.DIM + str(msg) + Style.RESET_ALL)
 
 def download_with_progress(url, output_path, expected_size, verbose_output, size_tolerance):
-	class DownloadProgressBar(tqdm):
+	class download_progress_bar(tqdm):
+		def __init__(self, expected_size=None, dynamic_ncols=True):
+			r_bar = '| {n_fmt}{unit}/{total_fmt}{unit} [{elapsed}<{remaining}, {rate_fmt}{postfix}]'
+			format = '{l_bar}{bar}' + r_bar
+
+			tqdm.__init__(
+				self, total=expected_size, unit='B', unit_divisor=1024, unit_scale=True, miniters=1,
+				dynamic_ncols=dynamic_ncols, bar_format=format
+			)
+
 		def update_to(self, b=1, bsize=1, tsize=None):
 			if tsize is not None:
 				self.total = tsize
 			self.update(b * bsize - self.n)
 			
 
-	r_bar = '| {n_fmt}{unit}/{total_fmt}{unit} [{elapsed}<{remaining}, {rate_fmt}{postfix}]'
-	format = '{l_bar}{bar}' + r_bar
-
-	with DownloadProgressBar(
-		unit='B', unit_divisor=1024, unit_scale=True, miniters=1, dynamic_ncols=True, bar_format=format
-	) as t:
+	with download_progress_bar(expected_size=expected_size) as t:
 		try:
 			urllib.request.urlretrieve(url, filename=output_path, reporthook=t.update_to)
 			file_size = os.path.getsize(output_path)
@@ -179,9 +183,10 @@ def is_debug() -> bool:
     return hasattr(sys, 'gettrace') and sys.gettrace() is not None
 
 class percentage_tqdm(tqdm):
-	def __init__(self, iterable=None, total=None):
+	def __init__(self, iterable=None, total=None, dynamic_ncols=True):
 		tqdm.__init__(
-			self, iterable=iterable, total=total, bar_format='{l_bar}{bar}| [{elapsed}<{remaining}]', dynamic_ncols=True
+			self, iterable=iterable, total=total, bar_format='{l_bar}{bar}| [{elapsed}<{remaining}]',
+			dynamic_ncols=dynamic_ncols
 		)
 
 class chain:
