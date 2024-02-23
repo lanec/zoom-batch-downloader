@@ -5,6 +5,7 @@ import shutil
 import sys
 import unicodedata
 import urllib
+from functools import reduce
 from json import dumps
 from time import sleep
 
@@ -178,13 +179,32 @@ def is_debug() -> bool:
     return hasattr(sys, 'gettrace') and sys.gettrace() is not None
 
 class percentage_tqdm(tqdm):
-	def __init__(self, iterable=None, total=None, fill_on_close=False):
+	def __init__(self, iterable=None, total=None):
 		tqdm.__init__(
 			self, iterable=iterable, total=total, bar_format='{l_bar}{bar}| [{elapsed}<{remaining}]', dynamic_ncols=True
 		)
-		self.fill_on_close = fill_on_close
 
-	def close(self):
-		if self.fill_on_close:
-			self.total = self.n
-		tqdm.close(self)
+class chain:
+	def __init__(self, *iters):
+		self.iter_list = list(iters)
+		self.i = 0
+		try:
+			self.length = reduce(lambda sum, iter: sum + len(iter), self.iter_list, 0)
+		except TypeError:
+			pass
+
+	def __iter__(self): return self
+
+	def __len__(self):
+		if self.length:
+			return self.length
+		raise TypeError("object of type 'ClassName' has no len()")
+
+	def __next__(self):
+		while(self.i < len(self.iter_list)):
+			try:
+				return next(self.iter_list[self.i])
+			except StopIteration:
+				self.i = self.i + 1
+
+		raise StopIteration

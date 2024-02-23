@@ -63,20 +63,14 @@ def get_users():
 		return [(email, '') for email in CONFIG.USERS]
 
 	utils.print_bright('Scanning for users:')
-	active_url = 'https://api.zoom.us/v2/users?status=active'
-	inactive_url = 'https://api.zoom.us/v2/users?status=inactive'
-
-	page_count = client.get_page_count(active_url) + client.get_page_count(inactive_url)
+	active_users_url = 'https://api.zoom.us/v2/users?status=active'
+	inactive_users_url = 'https://api.zoom.us/v2/users?status=inactive'
 	
 	users = []
-	with utils.percentage_tqdm(total=page_count, fill_on_close=True) as progress_bar:
-		for url in [active_url, inactive_url]:	
-			client.paginate_reduce_into(
-				url, users,
-				lambda users, page: users.extend([(user['email'], get_user_name(user)) for user in page['users']]),
-				update_progress=lambda: progress_bar.update(1)
-			)
-	
+	pages = utils.chain(client.paginate(active_users_url), client.paginate(inactive_users_url))
+	for page in utils.percentage_tqdm(pages):
+			users.extend([(user['email'], get_user_name(user)) for user in page['users']]),
+
 	print()
 	return users
 
@@ -131,7 +125,7 @@ def get_meeting_uuids(user_email, start_date, end_date):
 	local_start_date = start_date
 	delta = datetime.timedelta(days=29)
 	
-	utils.print_bright('Scanning for meetings:')
+	utils.print_bright('Scanning for recorded meetings:')
 	estimated_iterations = math.ceil((end_date-start_date) / datetime.timedelta(days=30))
 	with utils.percentage_tqdm(total=estimated_iterations) as progress_bar:
 		while local_start_date <= end_date:
@@ -139,13 +133,13 @@ def get_meeting_uuids(user_email, start_date, end_date):
 
 			local_start_date_str = date_to_str(local_start_date)
 			local_end_date_str = date_to_str(local_end_date)
-
 			url = f'https://api.zoom.us/v2/users/{user_email}/recordings?from={local_start_date_str}&to={local_end_date_str}'
-			meeting_uuids.extend(client.paginate_reduce_into(
-				url, [],
-				lambda ids, page: ids.extend([meeting['uuid'] for meeting in page['meetings']])
-			)[::-1])
+			
+			ids = []
+			for page in client.paginate(url):
+				ids.extend([meeting['uuid'] for meeting in page['meetings']])
 
+			meeting_uuids.extend(reversed(ids))
 			local_start_date = local_end_date + datetime.timedelta(days=1)
 			progress_bar.update(1)
 
