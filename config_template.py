@@ -37,7 +37,7 @@ RECORDING_FILE_TYPES = [
 # If True, recordings will be grouped in folders by their owning user.
 GROUP_BY_USER = True
 
-# If True, recordings will be grouped in folders by their topics
+# If True, recordings will be grouped in folders by their topics.
 GROUP_BY_TOPIC = True
 
 # If True, each instance of recording will be in its own folder (which may contain multiple files).
@@ -48,7 +48,7 @@ GROUP_BY_RECORDING = False
 # This works when "Record a separate audio file of each participant" is enabled.
 INCLUDE_PARTICIPANT_AUDIO = True
 
-# Set to True for more verbose output
+# Set to True for more verbose output.
 VERBOSE_OUTPUT = False
 
 # Constants used for indicating size in bytes.
@@ -64,6 +64,6 @@ MINIMUM_FREE_DISK = 1 * GB
 
 # Tolerance for recording files size mismatch between the declared size in Zoom Servers and the files 
 # actually downloaded from the server.
-# This was observed to happen sometimes on google drive mounted storage (mismatches of < 300 KBs)
+# This was observed to happen sometimes on google drive mounted storage (mismatches of < 300 KBs).
 # Note: High tolerance might cause issues like corrupt downloads not being recognized by script.
 FILE_SIZE_MISMATCH_TOLERANCE = 0 * KB
