@@ -5,10 +5,11 @@ Download all your Zoom cloud recordings for accounts with [paid plans](https://z
 This script requires [server-to-server app](https://developers.zoom.us/docs/internal-apps/create/) credentials from the [Zoom marketplace](https://marketplace.zoom.us/user/build)
 
 Required Scopes for your server-to-server zoom app:
+
 - `recording:read:admin` to download the recordings.
 - `user:read:admin` if you want the script to iterate over all users in the account (default behavior).
   
-## Instructions:
+## Instructions
 
 1. Create a server-to-server app as specified above and activate it (no need to publish).
 
