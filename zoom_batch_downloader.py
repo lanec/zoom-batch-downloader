@@ -183,7 +183,7 @@ def download_recordings_from_meetings(meetings, host_folder):
 			file_name = utils.slugify(
 				f'{recording_name}__{recording_type_suffix}{file_name_suffix}{file_id[-8:]}'
 			) + '.' + ext
-			file_size = int(recording_file.get('file_size'))
+			file_size = int(recording_file['file_size'])
 
 			if download_recording_file(url, host_folder, file_name, file_size, topic, recording_name):
 				total_size += file_size
