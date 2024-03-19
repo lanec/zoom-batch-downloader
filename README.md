@@ -1,6 +1,6 @@
 # zoom-batch-downloader
 
-Download all your Zoom cloud recordings for accounts with [paid plans](https://zoom.us/pricing#personal) and detect silent scenes with FFmpeg.
+Download all your Zoom cloud recordings from **specific date** _(prompts in the console)_ for accounts with [paid plans](https://zoom.us/pricing#personal) and detect silent scenes with FFmpeg.
 
 After detecting silent scenes, it creates [.llc](https://github.com/mifi/lossless-cut) file to edit the video.
 
