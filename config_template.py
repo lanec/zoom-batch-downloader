@@ -58,6 +58,12 @@ VERBOSE_OUTPUT = False
 # Set to True if you want to generate LLC (lossless-cut) files with silent detection
 GENERATE_LLC_FILES = True
 
+#Set the threshold for the noise, if GENERATE_LLC_FILES is True
+NOISE = -40
+
+#Set the minimum duration of the noise, if GENERATE_LLC_FILES is True
+DURATION = 7
+
 # Minimum file size to download in MB. Files smaller than this will be skipped.
 MIN_FILE_SIZE = 10
 
