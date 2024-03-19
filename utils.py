@@ -5,13 +5,11 @@ import shutil
 import sys
 import unicodedata
 import urllib
-from functools import reduce
 from json import dumps
 from time import sleep
 
 from colorama import Fore, Style
 from tqdm import tqdm
-
 
 def prepend_path_on_windows(path):
 	if os.name != 'nt':
@@ -113,7 +111,7 @@ def wait_for_disk_space(file_size, path, minimum_free_disk, interval):
 
 def size_to_string(size_bytes, separator = ''):
 	if size_bytes == 0:
-		return '0' + str(separator) + 'B'
+		return '0B'
 	units = ('B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB')
 	i = int(math.floor(math.log(size_bytes, 1024)))
 	p = 1024**i
@@ -133,23 +131,19 @@ def print_dim(msg):
 	print(Style.DIM + str(msg) + Style.RESET_ALL)
 
 def download_with_progress(url, output_path, expected_size, verbose_output, size_tolerance):
-	class download_progress_bar(tqdm):
-		def __init__(self, expected_size=None, dynamic_ncols=True):
-			r_bar = '| {n_fmt}{unit}/{total_fmt}{unit} [{elapsed}<{remaining}, {rate_fmt}{postfix}]'
-			format = '{l_bar}{bar}' + r_bar
-
-			tqdm.__init__(
-				self, total=expected_size, unit='B', unit_divisor=1024, unit_scale=True, miniters=1,
-				dynamic_ncols=dynamic_ncols, bar_format=format
-			)
-
+	class DownloadProgressBar(tqdm):
 		def update_to(self, b=1, bsize=1, tsize=None):
 			if tsize is not None:
 				self.total = tsize
 			self.update(b * bsize - self.n)
 			
 
-	with download_progress_bar(expected_size=expected_size) as t:
+	r_bar = '| {n_fmt}{unit}/{total_fmt}{unit} [{elapsed}<{remaining}, {rate_fmt}{postfix}]'
+	format = '{l_bar}{bar}' + r_bar
+
+	with DownloadProgressBar(
+		unit='B', unit_divisor=1024, unit_scale=True, miniters=1, dynamic_ncols=True, bar_format=format
+	) as t:
 		try:
 			urllib.request.urlretrieve(url, filename=output_path, reporthook=t.update_to)
 			file_size = os.path.getsize(output_path)
@@ -184,33 +178,7 @@ def is_debug() -> bool:
     return hasattr(sys, 'gettrace') and sys.gettrace() is not None
 
 class percentage_tqdm(tqdm):
-	def __init__(self, iterable=None, total=None, dynamic_ncols=True):
+	def __init__(self, iterable=None, total=None):
 		tqdm.__init__(
-			self, iterable=iterable, total=total, bar_format='{l_bar}{bar}| [{elapsed}<{remaining}]',
-			dynamic_ncols=dynamic_ncols
+			self, iterable=iterable, total=total, bar_format='{l_bar}{bar}| [{elapsed}<{remaining}]', dynamic_ncols=True
 		)
-
-class chain:
-	def __init__(self, *iters):
-		self.iter_list = list(iters)
-		self.i = 0
-		try:
-			self.length = reduce(lambda sum, iter: sum + len(iter), self.iter_list, 0)
-		except TypeError:
-			pass
-
-	def __iter__(self): return self
-
-	def __len__(self):
-		if self.length:
-			return self.length
-		raise TypeError("object of type 'ClassName' has no len()")
-
-	def __next__(self):
-		while(self.i < len(self.iter_list)):
-			try:
-				return next(self.iter_list[self.i])
-			except StopIteration:
-				self.i = self.i + 1
-
-		raise StopIteration
