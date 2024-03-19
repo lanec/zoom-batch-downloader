@@ -26,7 +26,12 @@ Required Scopes for your server-to-server zoom app:
     ```bash
     python -m pip install -r requirements.txt
     ```
+1. Install ffmpeg
 
+     ```bash
+    pip install python-ffmpeg
+    ```
+     
 1. Run `zoom_batch_downloader.py`.
 
     ```bash
