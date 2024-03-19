@@ -15,7 +15,7 @@ Required Scopes for your server-to-server zoom app:
 
 1. Create a server-to-server app as specified above and activate it (no need to publish).
 
-1. Clone/[Download](https://github.com/lanec/zoom-batch-downloader/archive/refs/heads/master.zip) this repository.
+1. Clone/[Download](https://github.com/AndriiLabaG/zoom-batch-downloader/archive/refs/heads/master.zip) this repository.
 
 1. Copy `config_template.py` to a new file called `config.py` in the same directory and edit it to include your credentials and the target path for your recording downloads.
 
