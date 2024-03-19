@@ -39,3 +39,4 @@ Required Scopes for your server-to-server zoom app:
     ```
 
 Code written by Georg Kasmin, Lane Campbell and Aness Zurba.
+Modified with ChatGPT.
