@@ -331,6 +331,10 @@ def process_videos():
     # Use OUTPUT_PATH from config as the input and output folder
     input_output_folder = CONFIG.OUTPUT_PATH
 
+    # Use NOISE and DURATION from config as the ffmpeg parameters
+    noise = CONFIG.NOISE
+    duration = CONFIG.DURATION
+
     print(f"Processing videos in {input_output_folder}...")
     for filename in os.listdir(input_output_folder):
         if filename.lower().endswith((".mp4", ".avi", ".mkv", ".flv", ".mov")):  # Add or remove video formats as needed
@@ -339,7 +343,7 @@ def process_videos():
             output_file = os.path.join(input_output_folder, os.path.splitext(filename)[0] + "-proj.llc")
             log_file = os.path.join(input_output_folder, os.path.splitext(filename)[0] + ".txt")
 
-            command = f'ffmpeg -hide_banner -vn -i "{input_file}" -af silencedetect=noise=-40dB:d=7 -f null - 2>&1'
+            command = f'ffmpeg -hide_banner -vn -i "{input_file}" -af silencedetect=noise={noise}dB:d={duration} -f null - 2>&1'
             
             # Start the timer
             start_time = time.time()
