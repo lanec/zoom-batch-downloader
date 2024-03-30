@@ -6,8 +6,13 @@ This script requires [server-to-server app](https://developers.zoom.us/docs/inte
 
 Required Scopes for your server-to-server zoom app:
 
+- `cloud_recording:read:list_user_recordings:admin`
+- `cloud_recording:read:list_recording_files:admin`
+- `user:read:list_users:admin` if you want the script to iterate over all users in the account (default behavior).
+
+If you are using classic scopes then these would be: 
 - `recording:read:admin` to download the recordings.
-- `user:read:admin` if you want the script to iterate over all users in the account (default behavior).
+- `user:read:admin` if you want the script to iterate over all users in the account.
   
 ## Instructions
 
