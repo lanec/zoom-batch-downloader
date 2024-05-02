@@ -10,6 +10,8 @@ from colorama import Fore, Style
 
 import utils
 from zoom_client import zoom_client
+import ssl
+ssl._create_default_https_context = ssl._create_unverified_context
 
 colorama.init()
 
