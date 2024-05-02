@@ -38,4 +38,4 @@ If you are using classic scopes then these would be:
     python zoom_batch_downloader.py
     ```
 
-Code written by Georg Kasmin, Lane Campbell and Aness Zurba.
+Code written by Georg Kasmin, Lane Campbell, Sami Hassan and Aness Zurba.
