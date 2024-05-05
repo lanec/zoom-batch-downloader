@@ -5,7 +5,6 @@ import traceback
 from calendar import monthrange
 from types import ModuleType
 import sqlite3
-import argparse
 
 import colorama
 from colorama import Fore, Style
