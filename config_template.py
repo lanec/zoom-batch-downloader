@@ -3,12 +3,18 @@ ACCOUNT_ID = R"##########"
 CLIENT_ID = R"##########"
 CLIENT_SECRET = R"##########"
 
+
+# Insert non ready files flag here, if it's true only files that were not ready during last runtime will be downloaded.
+NOT_READY_FILES_ONLY = False
+
+
 # Put your own download path here, no need to escape backslashes but avoid ending with one.
 OUTPUT_PATH = R"C:\Test\Zoom"
 
+
 # Date range (inclusive) for downloads, None value for Days gets replaced by first/last day of the month.
 START_DAY, START_MONTH, START_YEAR = None, 5, 2020
-END_DAY, END_MONTH, END_YEAR = None , 3, 2022
+END_DAY, END_MONTH, END_YEAR = None, 3, 2022
 
 # Put here emails of the users you want to check for recordings. If empty, all users under the account will be checked.
 USERS = [
@@ -62,7 +68,7 @@ TB = 1024 * GB
 # expected to get below this amount as a result of the new file.
 MINIMUM_FREE_DISK = 1 * GB
 
-# Tolerance for recording files size mismatch between the declared size in Zoom Servers and the files 
+# Tolerance for recording files size mismatch between the declared size in Zoom Servers and the files
 # actually downloaded from the server.
 # This was observed to happen sometimes on google drive mounted storage (mismatches of < 300 KBs).
 # Note: High tolerance might cause issues like corrupt downloads not being recognized by script.

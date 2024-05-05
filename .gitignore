@@ -1,3 +1,4 @@
 ﻿.venv
 config.py
 __pycache__
+meetings.db
