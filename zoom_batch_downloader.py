@@ -5,6 +5,7 @@ import traceback
 from calendar import monthrange
 from types import ModuleType
 import sqlite3
+import time
 
 import colorama
 from colorama import Fore, Style
@@ -321,21 +322,54 @@ def download_recording_file(
     utils.wait_for_disk_space(
         file_size, CONFIG.OUTPUT_PATH, CONFIG.MINIMUM_FREE_DISK, interval=5
     )
-
     tmp_file_path = file_path + ".tmp"
-    client.do_with_token(
-        lambda t: utils.download_with_progress(
-            f"{download_url}?access_token={t}",
-            tmp_file_path,
-            file_size,
-            CONFIG.VERBOSE_OUTPUT,
-            CONFIG.FILE_SIZE_MISMATCH_TOLERANCE,
-        )
-    )
+
+    if download_with_retry(
+        download_url,
+        tmp_file_path,
+        file_size,
+        CONFIG.VERBOSE_OUTPUT,
+        CONFIG.FILE_SIZE_MISMATCH_TOLERANCE,
+    ):
+        os.rename(tmp_file_path, file_path)
+        return True
+    else:
+        return False
 
     os.rename(tmp_file_path, file_path)
 
     return True
+
+
+def download_with_retry(
+    download_url,
+    tmp_file_path,
+    file_size,
+    verbose_output,
+    file_size_mismatch_tolerance,
+    max_retries=10,
+):
+    retries = 0
+    while retries < max_retries:
+        try:
+            client.do_with_token(
+                lambda t: utils.download_with_progress(
+                    f"{download_url}?access_token={t}",
+                    tmp_file_path,
+                    file_size,
+                    verbose_output,
+                    file_size_mismatch_tolerance,
+                )
+            )
+            return True  # Download succeeded, no need to retry
+        except Exception as e:
+            print(f"Download failed: {e}")
+            retries += 1
+            if retries < max_retries:
+                print(f"Retrying ({retries}/{max_retries}) in 5 seconds...")
+                time.sleep(5)
+    print("Max retries reached, download failed.")
+    return False
 
 
 def create_path(host_folder, file_name, topic, recording_name):
