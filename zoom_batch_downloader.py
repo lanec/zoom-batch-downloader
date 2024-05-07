@@ -31,6 +31,19 @@ client = zoom_client(
     client_secret=CONFIG.CLIENT_SECRET,
 )
 
+# Connect to the SQLite database (or create it if it doesn't exist)
+conn = sqlite3.connect("meetings.db")
+
+# Create a cursor object to execute SQL queries
+cursor = conn.cursor()
+
+# Create a table to store the meeting UUIDs if it doesn't exist already
+cursor.execute("""CREATE TABLE IF NOT EXISTS meetings
+                (id INTEGER PRIMARY KEY, uuid TEXT UNIQUE)""")
+
+# Commit the transaction
+conn.commit()
+
 
 def main():
     NOT_READY_FILES_ONLY = CONFIG.NOT_READY_FILES_ONLY
@@ -381,19 +394,6 @@ def create_path(host_folder, file_name, topic, recording_name):
         folder_path = os.path.join(folder_path, recording_name)
 
     os.makedirs(folder_path, exist_ok=True)
-
-    # Connect to the SQLite database (or create it if it doesn't exist)
-    conn = sqlite3.connect("meetings.db")
-
-    # Create a cursor object to execute SQL queries
-    cursor = conn.cursor()
-
-    # Create a table to store the meeting UUIDs if it doesn't exist already
-    cursor.execute("""CREATE TABLE IF NOT EXISTS meetings
-					(id INTEGER PRIMARY KEY, uuid TEXT UNIQUE)""")
-
-    # Commit the transaction
-    conn.commit()
 
     return os.path.join(folder_path, file_name)
 
