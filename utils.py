@@ -8,7 +8,7 @@ import urllib
 from functools import reduce
 from json import dumps
 from time import sleep
-
+import socket
 from colorama import Fore, Style
 from tqdm import tqdm
 
@@ -151,6 +151,9 @@ def download_with_progress(url, output_path, expected_size, verbose_output, size
 
 	with download_progress_bar(expected_size=expected_size) as t:
 		try:
+			download_speed = 10  # simulate slow download speed
+			time_out = expected_size / download_speed 		
+			socket.setdefaulttimeout(time_out)
 			urllib.request.urlretrieve(url, filename=output_path, reporthook=t.update_to)
 			file_size = os.path.getsize(output_path)
 			if abs(file_size - expected_size) > size_tolerance:
