@@ -12,15 +12,21 @@ class zoom_client:
         self.cached_token = None
 
     def get(self, url):
-        return self._get_with_token(lambda t: requests.get(url=url, headers=self.get_headers(t))).json()
+        return self._req_with_token(lambda t: requests.get(url=url, headers=self.get_headers(t))).json()
 
-    def _get_with_token(self, get):
+    def delete(self, url):
+        resp = self._req_with_token(lambda t: requests.delete(url = url, headers=self.get_headers(t)))
+        if resp.status_code == 204:
+            return None
+        return resp.json()
+
+    def _req_with_token(self, req):
         if self.cached_token:
-            response = get(self.cached_token)
+            response = req(self.cached_token)
         
         if not self.cached_token or response.status_code == 401:
             self.cached_token = self.fetch_token()
-            response = get(self.cached_token)
+            response = req(self.cached_token)
 
         if not response.ok:
             raise Exception(f'{response.status_code} {response.text}')
@@ -86,4 +92,4 @@ class zoom_client:
 
             return test_response
             
-        self._get_with_token(lambda t: do_as_get(t))
+        self._req_with_token(lambda t: do_as_get(t))

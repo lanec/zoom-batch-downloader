@@ -64,7 +64,7 @@ def main():
             CONFIG.END_DAY or monthrange(CONFIG.END_YEAR, CONFIG.END_MONTH)[1],
         )
 
-        file_count, total_size, skipped_count = download_recordings(
+        file_count, total_size, skipped_count, deleted_count = download_recordings(
             get_users(), from_date, to_date
         )
 
@@ -74,6 +74,7 @@ def main():
             f"{Style.BRIGHT}Downloaded {Fore.GREEN}{file_count}{Fore.RESET} files.",
             f"Total size: {Fore.GREEN}{total_size_str}{Fore.RESET}.{Style.RESET_ALL}",
             f"Skipped: {skipped_count} files.",
+            f"Deleted: {deleted_count} meetings.",
         )
 
 
@@ -130,7 +131,7 @@ def get_user_name(user_data):
 
 
 def download_recordings(users, from_date, to_date):
-    file_count, total_size, skipped_count = 0, 0, 0
+    file_count, total_size, skipped_count, deleted_count = 0, 0, 0, 0
 
     for user_email, user_name in users:
         user_description = get_user_description(user_email, user_name)
@@ -142,20 +143,26 @@ def download_recordings(users, from_date, to_date):
         )
 
         meetings = get_meetings(get_meeting_uuids(user_email, from_date, to_date))
-        user_file_count, user_total_size, user_skipped_count = (
+        user_file_count, user_total_size, user_skipped_count, user_downloaded = (
             download_recordings_from_meetings(meetings, user_host_folder)
         )
 
         utils.print_bright(
             "######################################################################"
         )
+        
+        if CONFIG.DELETE_AFTER_DOWNLOAD:
+            utils.print_bright(f"Deleting {len(user_downloaded)} meetings from {user_description}")
+            delete_meetings(user_downloaded)
+            deleted_count += len(user_downloaded)
+
         print()
 
         file_count += user_file_count
         total_size += user_total_size
         skipped_count += user_skipped_count
 
-    return (file_count, total_size, skipped_count)
+    return (file_count, total_size, skipped_count, deleted_count)
 
 
 def download_not_ready_files():
@@ -186,6 +193,15 @@ def get_user_host_folder(user_email):
 def date_to_str(date):
     return date.strftime("%Y-%m-%d")
 
+def delete_meetings(meetings):
+    for meeting in meetings:
+        try:
+            url = f"https://api.zoom.us/v2/meetings/{meeting["uuid"]}/recordings"
+            client.delete(url)
+        except Exception as e:
+            utils.print_bright(
+                f"Logging error occurred while deleting recordings for meeting {meeting.get("uuid")}: {e}"
+            )
 
 def get_meeting_uuids(user_email, start_date, end_date):
     meeting_uuids = []
@@ -246,6 +262,8 @@ def get_meetings(meeting_uuids):
 def download_recordings_from_meetings(meetings, host_folder):
     file_count, total_size, skipped_count = 0, 0, 0
 
+    downloaded = []
+
     for meeting in meetings:
         if (
             CONFIG.TOPICS
@@ -277,9 +295,15 @@ def download_recordings_from_meetings(meetings, host_folder):
                 recording_file.get("file_extension")
                 or os.path.splitext(recording_file["file_name"])[1]
             )
-            recording_name = utils.slugify(
-                f'{topic}__{recording_file["recording_start"]}'
-            )
+            if CONFIG.NAME_RECORDINGS_DATE_FIRST:
+                recording_name = utils.slugify(
+                    f'{recording_file["recording_start"]}__{topic}'
+                )
+            else:
+                recording_name = utils.slugify(
+                    f'{topic}__{recording_file["recording_start"]}'
+                )
+
             file_id = recording_file["id"]
             file_name_suffix = (
                 os.path.splitext(recording_file["file_name"])[0] + "__"
@@ -308,7 +332,10 @@ def download_recordings_from_meetings(meetings, host_folder):
             else:
                 skipped_count += 1
 
-    return file_count, total_size, skipped_count
+        if skipped_count == 0:
+            downloaded.append(meeting)
+
+    return file_count, total_size, skipped_count, downloaded
 
 
 def download_recording_file(

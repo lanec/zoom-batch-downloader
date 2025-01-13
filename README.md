@@ -8,12 +8,15 @@ Required Scopes for your server-to-server zoom app:
 
 - `cloud_recording:read:list_user_recordings:admin`.
 - `cloud_recording:read:list_recording_files:admin`.
+- (Optional) `cloud_recording:delete:meeting_recording:admin`: if you want to enable `DELETE_AFTER_DOWNLOAD`
 - (Optional) `user:read:list_users:admin`: if you want the script to iterate over all users in the account (default behavior).
 
-If you are using classic scopes then these would be: 
+If you are using classic scopes then these would be:
+
 - `recording:read:admin` to download the recordings.
+- `recording:write:admin` to delete recordings.
 - `user:read:admin` if you want the script to iterate over all users in the account.
-  
+
 ## Instructions
 
 1. Create a server-to-server app as specified above and activate it (no need to publish).
@@ -28,14 +31,14 @@ If you are using classic scopes then these would be:
 
 1. Install the requirements listed in `requirements.txt` using [pip](https://pip.pypa.io/en/stable/reference/requirement-specifiers/).
 
-    ```bash
-    python -m pip install -r requirements.txt
-    ```
+   ```bash
+   python -m pip install -r requirements.txt
+   ```
 
 1. Run `zoom_batch_downloader.py`.
 
-    ```bash
-    python zoom_batch_downloader.py
-    ```
+   ```bash
+   python zoom_batch_downloader.py
+   ```
 
 Code written by Georg Kasmin, Lane Campbell, Sami Hassan and Aness Zurba.
