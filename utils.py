@@ -4,11 +4,11 @@ import re
 import shutil
 import sys
 import unicodedata
-import urllib
+import urllib.parse
 from functools import reduce
 from json import dumps
 from time import sleep
-import socket
+import requests
 from colorama import Fore, Style
 from tqdm import tqdm
 
@@ -132,7 +132,30 @@ def print_dim_red(msg):
 def print_dim(msg):
 	print(Style.DIM + str(msg) + Style.RESET_ALL)
 
-def download_with_progress(url, output_path, expected_size, verbose_output, size_tolerance):
+def print_download_diagnostic(output_path, response_headers, max_bytes=500):
+	"""On an unexpected download, report what was actually received so we can tell
+	whether Zoom served an HTML error/login page (200 OK) instead of the file."""
+	content_type = response_headers.get('Content-Type') if response_headers else None
+	print_dim_red(f'Response Content-Type: {content_type or "unknown"}')
+
+	try:
+		with open(output_path, 'rb') as f:
+			head = f.read(max_bytes)
+	except OSError:
+		return
+
+	# The .tmp file is deleted when the download fails, so keep a copy to inspect.
+	debug_path = output_path + '.debug'
+	try:
+		shutil.copyfile(output_path, debug_path)
+		print_dim_red(f'Saved unexpected response to: {debug_path}')
+	except OSError:
+		pass
+
+	text = head.decode('utf-8', errors='replace')
+	print_dim_red(f'First {len(head)} bytes of response:\n{text}')
+
+def download_with_progress(url, output_path, expected_size, verbose_output, size_tolerance, token=None):
 	class download_progress_bar(tqdm):
 		def __init__(self, expected_size=None, dynamic_ncols=True):
 			r_bar = '| {n_fmt}{unit}/{total_fmt}{unit} [{elapsed}<{remaining}, {rate_fmt}{postfix}]'
@@ -153,8 +176,19 @@ def download_with_progress(url, output_path, expected_size, verbose_output, size
 		try:
 			download_speed = 1.1  # simulate slow download speed
 			time_out = expected_size / download_speed 		
-			socket.setdefaulttimeout(time_out)
-			urllib.request.urlretrieve(url, filename=output_path, reporthook=t.update_to)
+			# Pass the token as an Authorization header rather than an ?access_token= query
+			# param: Zoom rejects the query-param token for passcode-protected recordings and
+			# returns its "Passcode Required" HTML page (200 OK) instead of the recording.
+			headers = {'Authorization': f'Bearer {token}'} if token else {}
+			response = requests.get(url, headers=headers, stream=True, timeout=time_out)
+			response.raise_for_status()
+			response_headers = response.headers
+
+			with open(output_path, 'wb') as f:
+				for chunk in response.iter_content(chunk_size=8192):
+					f.write(chunk)
+					t.update(len(chunk))
+
 			file_size = os.path.getsize(output_path)
 			if abs(file_size - expected_size) > size_tolerance:
 				t.update_to(bsize=0, tsize=expected_size)
@@ -164,6 +198,7 @@ def download_with_progress(url, output_path, expected_size, verbose_output, size
 			   			f'Size difference: {size_to_string(abs(file_size - expected_size))}.\n'
 						f'You might want to increase FILE_SIZE_MISMATCH_TOLERANCE in config.py'
 					)
+					print_download_diagnostic(output_path, response_headers)
 				raise Exception(f'Failed to download file at {url}.{"" if verbose_output else " Enable verbose output for more details."}')
 			
 			t.update_to(bsize=file_size, tsize=file_size)

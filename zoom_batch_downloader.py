@@ -394,11 +394,12 @@ def download_with_retry(
         try:
             client.do_with_token(
                 lambda t: utils.download_with_progress(
-                    f"{download_url}?access_token={t}",
+                    download_url,
                     tmp_file_path,
                     file_size,
                     verbose_output,
                     file_size_mismatch_tolerance,
+                    token=t,
                 )
             )
             return True  # Download succeeded, no need to retry
